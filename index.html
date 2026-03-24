@@ -255,7 +255,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
   <div class="hdr-right">
     <div class="live-badge">
       <div class="live-dot" id="live-dot"></div>
-      <span id="live-txt">Connecting...</span>
+      <span id="live-txt">Click Fetch + Scan</span>
     </div>
     <div id="clock">--:-- PST</div>
   </div>
@@ -326,6 +326,10 @@ Click "⟳ Fetch + Scan" to start, or enable Auto for hands-free operation.</div
   <!-- CHAT -->
   <div class="chat-panel">
     <div class="chat-hdr"><div class="logo-pulse" style="width:6px;height:6px;"></div>AI Strategy Assistant</div>
+    <div style="padding:7px 13px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:8px;">
+      <input id="api-key-inp" type="password" placeholder="Paste Anthropic API key to enable chat (sk-ant-...)" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:5px 9px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;" oninput="saveApiKey(this.value)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+      <div id="api-status" style="font-size:9px;color:var(--muted);white-space:nowrap;">No key</div>
+    </div>
     <div class="qps">
       <div class="qp" onclick="sq('What is the best strategy to trade right now given current conditions?')">Best trade now?</div>
       <div class="qp" onclick="sq('Give me the exact strikes for the current recommended strategy.')">Get strikes</div>
@@ -596,62 +600,116 @@ async function fetchLiveData(){
 
   let gotSpx=false, gotVix=false;
 
-  // SPX — fetch 5 days so we can get today's open
+  // Multiple data source strategies for GitHub Pages compatibility
+  const proxyBase = 'https://api.allorigins.win/raw?url=';
+
+  async function tryFetch(url, timeout=8000){
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), timeout);
+    try{
+      const r = await fetch(proxyBase + encodeURIComponent(url), {signal:ctrl.signal});
+      clearTimeout(timer);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    } catch(e){
+      clearTimeout(timer);
+      throw e;
+    }
+  }
+
+  // Strategy 1: Yahoo Finance v8 API via proxy
   try{
-    const url=`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d&t=${Date.now()}`;
-    const r=await fetch(url,{cache:'no-store'});
-    if(r.ok){
-      const d=await r.json();
-      const result=d?.chart?.result?.[0];
-      if(result){
-        const meta=result.meta;
-        const quotes=result.indicators?.quote?.[0];
-        const closes=quotes?.close||[];
-        const opens=quotes?.open||[];
-        liveSpx=meta?.regularMarketPrice||closes[closes.length-1];
-        liveOpen=opens[opens.length-1]||meta?.regularMarketOpen;
-        const prevClose=meta?.previousClose||meta?.chartPreviousClose||closes[closes.length-2];
-        if(liveSpx&&prevClose) liveChg=((liveSpx-prevClose)/prevClose)*100;
+    const spxUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d';
+    const d = await tryFetch(spxUrl);
+    const result = d?.chart?.result?.[0];
+    if(result){
+      const meta = result.meta;
+      const quotes = result.indicators?.quote?.[0];
+      const closes = quotes?.close || [];
+      const opens = quotes?.open || [];
+      liveSpx = meta?.regularMarketPrice || closes[closes.length-1];
+      liveOpen = opens[opens.length-1] || meta?.regularMarketOpen;
+      const prevClose = meta?.previousClose || meta?.chartPreviousClose || closes[closes.length-2];
+      if(liveSpx && prevClose) liveChg = ((liveSpx - prevClose) / prevClose) * 100;
+      if(liveSpx){
+        document.getElementById('inp-spx').value = Math.round(liveSpx);
+        gotSpx = true;
+        // Auto-detect direction
+        if(liveOpen){
+          const chgFromOpen = ((liveSpx - liveOpen) / liveOpen) * 100;
+          const dirSel = document.getElementById('inp-dir');
+          if(chgFromOpen <= -0.3) dirSel.value = 'DOWN';
+          else if(chgFromOpen >= 0.3) dirSel.value = 'UP';
+          else dirSel.value = 'FLAT';
+        }
+      }
+    }
+  } catch(e){ console.warn('SPX v8 failed:', e.message); }
+
+  // Strategy 2: Yahoo Finance v7 quote API (fallback)
+  if(!gotSpx){
+    try{
+      const spxUrl2 = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5EGSPC';
+      const d2 = await tryFetch(spxUrl2);
+      const q = d2?.quoteResponse?.result?.[0];
+      if(q){
+        liveSpx = q.regularMarketPrice;
+        liveChg = q.regularMarketChangePercent;
+        liveOpen = q.regularMarketOpen;
         if(liveSpx){
-          document.getElementById('inp-spx').value=Math.round(liveSpx);
-          gotSpx=true;
-        }
-        // Auto-set direction from price vs today's open
-        if(liveSpx&&liveOpen){
-          const chgFromOpen=((liveSpx-liveOpen)/liveOpen)*100;
-          const dirSel=document.getElementById('inp-dir');
-          if(chgFromOpen<=-0.3) dirSel.value='DOWN';
-          else if(chgFromOpen>=0.3) dirSel.value='UP';
-          else dirSel.value='FLAT';
+          document.getElementById('inp-spx').value = Math.round(liveSpx);
+          const dirSel = document.getElementById('inp-dir');
+          if(liveChg <= -0.3) dirSel.value = 'DOWN';
+          else if(liveChg >= 0.3) dirSel.value = 'UP';
+          else dirSel.value = 'FLAT';
+          gotSpx = true;
         }
       }
-    }
-  }catch(e){console.warn('SPX fetch:',e.message);}
+    } catch(e){ console.warn('SPX v7 failed:', e.message); }
+  }
 
-  // VIX
+  // Fetch VIX
   try{
-    const url2=`https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d&t=${Date.now()}`;
-    const r2=await fetch(url2,{cache:'no-store'});
-    if(r2.ok){
-      const d2=await r2.json();
-      const meta2=d2?.chart?.result?.[0]?.meta;
-      liveVix=meta2?.regularMarketPrice;
-      if(liveVix){
-        document.getElementById('inp-vix').value=liveVix.toFixed(2);
-        gotVix=true;
-      }
+    const vixUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d';
+    const d3 = await tryFetch(vixUrl);
+    const meta3 = d3?.chart?.result?.[0]?.meta;
+    liveVix = meta3?.regularMarketPrice;
+    if(liveVix){
+      document.getElementById('inp-vix').value = liveVix.toFixed(2);
+      gotVix = true;
     }
-  }catch(e){console.warn('VIX fetch:',e.message);}
+  } catch(e){ console.warn('VIX failed:', e.message); }
 
-  // Update live status
-  if(gotSpx&&gotVix){
+  // VIX fallback via v7
+  if(!gotVix){
+    try{
+      const vixUrl2 = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5EVIX';
+      const d4 = await tryFetch(vixUrl2);
+      const q4 = d4?.quoteResponse?.result?.[0];
+      if(q4?.regularMarketPrice){
+        liveVix = q4.regularMarketPrice;
+        document.getElementById('inp-vix').value = liveVix.toFixed(2);
+        gotVix = true;
+      }
+    } catch(e){ console.warn('VIX v7 failed:', e.message); }
+  }
+
+  const gotBoth = gotSpx && gotVix;
+
+  if(gotBoth){
     dot.className='live-dot on';
-    txt.textContent=`Live ✓ SPX ${liveSpx?.toFixed(0)} | VIX ${liveVix?.toFixed(2)}`;
+    txt.textContent=`Live ✓  SPX ${Math.round(liveSpx).toLocaleString()} | VIX ${liveVix?.toFixed(2)}`;
     document.getElementById('manual-inputs').classList.remove('show');
     return true;
+  } else if(gotSpx || gotVix){
+    dot.className='live-dot';
+    dot.style.background='var(--yellow)';
+    txt.textContent='Partial data — verify missing values manually';
+    document.getElementById('manual-inputs').classList.add('show');
+    return false;
   } else {
     dot.className='live-dot err';
-    txt.textContent='Live fetch failed — using manual input';
+    txt.textContent='Live fetch failed — enter SPX + VIX manually below';
     document.getElementById('manual-inputs').classList.add('show');
     return false;
   }
@@ -1029,6 +1087,32 @@ function showTyping(){
 }
 function rmTyping(){const e=document.getElementById('typ');if(e)e.remove();}
 
+function saveApiKey(key){
+  if(key.startsWith('sk-ant-')||key.startsWith('sk-')){
+    localStorage.setItem('pw_api_key', key);
+    document.getElementById('api-status').textContent='✓ Key saved';
+    document.getElementById('api-status').style.color='var(--green)';
+  } else if(key.length > 0){
+    document.getElementById('api-status').textContent='Invalid key format';
+    document.getElementById('api-status').style.color='var(--red)';
+  } else {
+    document.getElementById('api-status').textContent='No key';
+    document.getElementById('api-status').style.color='var(--muted)';
+  }
+}
+function loadApiKey(){
+  const k = localStorage.getItem('pw_api_key')||'';
+  if(k){
+    document.getElementById('api-key-inp').value=k;
+    document.getElementById('api-status').textContent='✓ Key loaded';
+    document.getElementById('api-status').style.color='var(--green)';
+  }
+  return k;
+}
+function getApiKey(){
+  return document.getElementById('api-key-inp').value || localStorage.getItem('pw_api_key') || '';
+}
+
 async function askAI(msg){
   thinking=true;document.getElementById('send-btn').disabled=true;showTyping();
   const et=getET();
@@ -1053,8 +1137,16 @@ Be direct. Give exact numbers. Use web search if you need current market info. U
 
   chatHist.push({role:'user',content:msg});
   try{
+    const apiKey = getApiKey();
+    if(!apiKey){
+      rmTyping();
+      addChatMsg('ai','⚠ No API key set.\n\nTo enable AI chat:\n1. Get a free API key at console.anthropic.com\n2. Paste it in the key field above\n3. It saves automatically for future sessions');
+      thinking=false;document.getElementById('send-btn').disabled=false;
+      return;
+    }
     const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,
         tools:[{type:'web_search_20250305',name:'web_search'}],messages:chatHist})
     });
@@ -1463,6 +1555,9 @@ updateWinTick(getWin());
 const md=document.getElementById('mkt-dot'),mt=document.getElementById('mkt-txt');
 if(mktOpen()){md.className='sd green';mt.textContent='Market Open';}
 else{md.className='sd gray';mt.textContent='Market Closed';}
+
+// Load saved API key
+loadApiKey();
 
 // Auto-fetch on load if market is open
 if(mktOpen()){
