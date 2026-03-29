@@ -1778,152 +1778,9 @@ function buildWaitCard(sc){
 // ═══════════════════════════════════════════════════
 // UPDATE TICKERS
 // ═══════════════════════════════════════════════════
-function updateTickers(sc){
-  // VIX gauge
-  const vv=document.getElementById('tv-vix'),vt=document.getElementById('t-vix');
-  vv.textContent=sc.vix?.toFixed(1)||'--';
-  vv.style.color=sc.vix<18?'var(--green)':sc.vix<25?'var(--accent)':sc.vix<35?'var(--orange)':'var(--red)';
-  document.getElementById('ts-vix').textContent=
-    sc.vix<18?'Low ✅':sc.vix<22?'Ideal ✅':sc.vix<25?'Elevated ⚠':sc.vix<35?'High ⚠':'Extreme ❌';
-  vt.className=`tick ${sc.vix<25?'pass':sc.vix<35?'warn':'fail'}`;
-
-  // SPX gauge
-  const sv=document.getElementById('tv-spx'),st=document.getElementById('t-spx');
-  sv.textContent=sc.spx?.toLocaleString()||'--';
-  sv.style.color='var(--text)';
-  const chg=sc.spx_pct;
-  const gapTxt=liveGapPct?` gap ${liveGapPct>0?'+':''}${liveGapPct.toFixed(1)}%`:'';
-  document.getElementById('ts-spx').textContent=`${chg>0?'+':''}${chg?.toFixed(2)}% ${sc.direction}${gapTxt}`;
-  st.className=`tick ${Math.abs(liveGapPct||0)<1.5?'pass':'warn'}`;
-
-  // IVR gauge
-  const ivr=liveIvr;
-  const ivrEl=document.getElementById('tv-ivr'),ivrT=document.getElementById('t-ivr');
-  if(ivr!==null){
-    ivrEl.textContent=`${ivr}%`;
-    ivrEl.style.color=ivr<30?'var(--red)':ivr<50?'var(--yellow)':ivr<75?'var(--accent)':'var(--green)';
-    document.getElementById('ts-ivr').textContent=
-      ivr<30?'Cheap — caution':ivr<50?'Moderate':ivr<75?'Rich ✅':'Very rich ✅';
-    ivrT.className=`tick ${ivr>=30?'pass':'fail'}`;
-  } else {
-    ivrEl.textContent='--';
-    document.getElementById('ts-ivr').textContent='Fetching...';
-  }
-
-  // VVIX gauge
-  const vvixEl=document.getElementById('tv-vvix'),vvixT=document.getElementById('t-vvix');
-  if(liveVvix){
-    vvixEl.textContent=liveVvix.toFixed(0);
-    vvixEl.style.color=liveVvix<90?'var(--green)':liveVvix<110?'var(--accent)':'var(--red)';
-    document.getElementById('ts-vvix').textContent=
-      liveVvix<90?'Stable ✅':liveVvix<110?'Caution ⚠':'BLOCK ❌';
-    vvixT.className=`tick ${liveVvix<90?'pass':liveVvix<110?'warn':'fail'}`;
-  } else {
-    vvixEl.textContent='--';
-    document.getElementById('ts-vvix').textContent='Fetching...';
-  }
-
-  // Term structure gauge
-  const termEl=document.getElementById('tv-term'),termT=document.getElementById('t-term');
-  if(liveVix9d&&sc.vix){
-    const isBack=liveVix9d>sc.vix*1.02;
-    const isCont=liveVix9d<sc.vix*0.98;
-    termEl.textContent=isBack?'BACK':isCont?'CONT':'FLAT';
-    termEl.style.color=isBack?'var(--green)':isCont?'var(--yellow)':'var(--accent)';
-    termEl.style.fontSize='13px';
-    document.getElementById('ts-term').textContent=
-      isBack?`9D:${liveVix9d.toFixed(1)} ↑ rich`:
-      isCont?`9D:${liveVix9d.toFixed(1)} ↓ thin`:
-      `9D:${liveVix9d.toFixed(1)} neutral`;
-    termT.className=`tick ${isBack?'pass':isCont?'warn':''}`;
-  } else {
-    termEl.textContent='--';
-    document.getElementById('ts-term').textContent='Fetching...';
-  }
-
-  // Expected move
-  const ev=document.getElementById('tv-em');
-  ev.textContent=sc.em?`±${sc.em}`:'--';
-  ev.style.color=sc.em>130?'var(--red)':sc.em>90?'var(--orange)':'var(--accent)';
-
-  // Regime
-  const regShort={CALM_RANGE:'CALM',LOW_VOL_TREND:'LOW VOL',NORMAL_RANGE:'NORMAL',
-    HIGH_VOL_TREND:'HI VOL',STRESS_TREND:'STRESS',NO_TRADE:'NO TRADE'};
-  const regColor={CALM_RANGE:'var(--green)',LOW_VOL_TREND:'var(--teal)',NORMAL_RANGE:'var(--accent)',
-    HIGH_VOL_TREND:'var(--orange)',STRESS_TREND:'var(--red)',NO_TRADE:'var(--red)'};
-  const stNames={
-    IRON_CONDOR:'Iron Condor',IRON_BUTTERFLY:'Iron Butterfly',
-    CREDIT_SPREAD:'Credit Spread',DOUBLE_CREDIT_SPREAD:'Dbl Spread',
-    BROKEN_WING_BUTTERFLY:'BWB',JADE_LIZARD:'Jade Lizard',
-    CALENDAR_SPREAD:'Calendar',DIAGONAL_SPREAD:'Diagonal',
-    NO_TRADE:'No Trade'};
-  const rv=document.getElementById('tv-reg'),rt=document.getElementById('t-reg');
-  rv.textContent=regShort[sc.regime]||'--';
-  rv.style.color=regColor[sc.regime]||'var(--muted)';
-  rv.style.fontSize='12px';
-  document.getElementById('ts-reg').textContent=stNames[sc.strategy]||'--';
-  rt.className=`tick ${['CALM_RANGE','LOW_VOL_TREND','NORMAL_RANGE'].includes(sc.regime)?'pass':
-    ['HIGH_VOL_TREND','STRESS_TREND'].includes(sc.regime)?'warn':'fail'}`;
-
-  // Market/trade status dots
-  const td=document.getElementById('trd-dot'),tt=document.getElementById('trd-txt');
-  if(sc.signal==='TRADE'){td.className='sd green';tt.textContent=`${stNames[sc.strategy]||'TRADE'} SIGNAL`;tt.style.color='var(--green)';}
-  else if(sc.signal==='NO_TRADE'){td.className='sd red';tt.textContent='NO TRADE TODAY';tt.style.color='var(--red)';}
-  else{td.className='sd yellow';tt.textContent='WAIT — SCANNING';tt.style.color='var(--yellow)';}
-  const md=document.getElementById('mkt-dot'),mt=document.getElementById('mkt-txt');
-  if(mktOpen()){md.className='sd green';mt.textContent='Market Open';}
-  else{md.className='sd gray';mt.textContent='Market Closed';}
-  updateWinTick(sc.win||getWin());
-}
-
-function updateWinTick(w){
-  const wv=document.getElementById('tv-win'),wt=document.getElementById('t-win');
-  const good=w==='PRIMARY'||w==='SECONDARY';
-  wv.textContent=w;
-  wv.style.color=good?'var(--green)':w==='PRE-ENTRY'?'var(--yellow)':'var(--red)';
-  wv.style.fontSize='10px';
-  document.getElementById('ts-win').textContent=getPSTLbl(w);
-  wt.className=`tick ${good?'pass':w==='PRE-ENTRY'?'warn':'fail'}`;
-}
-
 // ═══════════════════════════════════════════════════
 // LOG + AUTO-SCAN
 // ═══════════════════════════════════════════════════
-function addLog(cls,title,body){
-  const t=getET().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  const el=document.createElement('div');
-  el.className=`le ${cls}`;
-  el.innerHTML=`<div class="l-time">${t} ET</div><div class="l-title">${title}</div><div class="l-body">${body}</div>`;
-  document.getElementById('scan-log').appendChild(el);
-  el.scrollIntoView({behavior:'smooth',block:'end'});
-}
-function clearLog(){document.getElementById('scan-log').innerHTML='';addLog('le-info','🗑 Log Cleared','Ready.');}
-
-function toggleAuto(){
-  autoScan=!autoScan;
-  const btn=document.getElementById('auto-btn');
-  if(autoScan){
-    btn.textContent='Auto: ON ●';btn.style.color='var(--green)';
-    fetchAndScan();
-    addLog('le-info','⟳ Auto-Scan ON','Fetching live data + scanning every 15 minutes automatically.');
-  } else {
-    btn.textContent='Auto: OFF';btn.style.color='';
-    clearCD();
-    addLog('le-info','⏸ Auto-Scan OFF','Manual mode.');
-  }
-}
-
-function startCD(s){
-  clearCD();scanCD=s;
-  const el=document.getElementById('nxt-scan');el.className='cd on';
-  cdInt=setInterval(()=>{
-    scanCD--;
-    if(scanCD<=0){clearCD();if(autoScan&&mktOpen())fetchAndScan();}
-    else{const m=Math.floor(scanCD/60),sec=scanCD%60;el.textContent=`Next scan: ${m}:${sec.toString().padStart(2,'0')}`;}
-  },1000);
-}
-function clearCD(){if(cdInt)clearInterval(cdInt);document.getElementById('nxt-scan').textContent='--';document.getElementById('nxt-scan').className='cd';}
-
 // ═══════════════════════════════════════════════════
 // AI CHAT
 // ═══════════════════════════════════════════════════
@@ -1936,12 +1793,6 @@ async function sq(txt){if(!thinking){addChatMsg('user',txt);await askAI(txt);}}
 function hk(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,88)+'px';}
 
-function addChatMsg(role,content){
-  const msgs=document.getElementById('chat-msgs');
-  const div=document.createElement('div');div.className=`msg ${role}`;
-  div.innerHTML=`<div class="msg-role">${role==='user'?'You':role==='ai'?'PulseWhisper AI':'System'}</div><div class="msg-bub">${content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`;
-  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
-}
 function showTyping(){
   const msgs=document.getElementById('chat-msgs');
   const div=document.createElement('div');div.className='msg ai';div.id='typ';
@@ -2026,29 +1877,6 @@ Be direct. Give exact numbers. Use web search if you need current market info. U
 // ═══════════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════════
-function switchTab(tab){
-  // Hide all panels
-  document.getElementById('panel-journal').style.display='none';
-  document.getElementById('panel-analytics').style.display='none';
-  document.querySelector('.main').style.display='none';
-
-  // Deactivate all tabs
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-
-  if(tab==='scanner'){
-    document.querySelector('.main').style.display='grid';
-    document.getElementById('tab-scanner').classList.add('active');
-  } else if(tab==='journal'){
-    document.getElementById('panel-journal').style.display='flex';
-    document.getElementById('tab-journal').classList.add('active');
-    renderJournal();
-  } else if(tab==='analytics'){
-    document.getElementById('panel-analytics').style.display='flex';
-    document.getElementById('tab-analytics').classList.add('active');
-    renderAnalytics();
-  }
-}
-
 // ═══════════════════════════════════════════════════
 // TRADE JOURNAL — localStorage persistence
 // ═══════════════════════════════════════════════════
@@ -2647,11 +2475,11 @@ function renderCalendar(){
     {date:'2026-11-12',type:'cpi',name:'CPI Inflation Report',impact:'high',note:'Consumer Price Index — major vol event'},
     {date:'2026-12-11',type:'cpi',name:'CPI Inflation Report',impact:'high',note:'Consumer Price Index — major vol event'},
     // PCE / GDP
-    {date:'2026-01-30',type:'pce',name:'PCE Inflation + GDP',impact:'high',note:'Fed\'s preferred inflation measure + growth data'},
-    {date:'2026-03-27',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed\'s preferred inflation measure'},
-    {date:'2026-06-26',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed\'s preferred inflation measure'},
-    {date:'2026-09-25',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed\'s preferred inflation measure'},
-    {date:'2026-12-23',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed\'s preferred inflation measure'},
+    {date:'2026-01-30',type:'pce',name:'PCE Inflation + GDP',impact:'high',note:'Fed's preferred inflation measure + growth data'},
+    {date:'2026-03-27',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
+    {date:'2026-06-26',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
+    {date:'2026-09-25',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
+    {date:'2026-12-23',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
   ];
 
   const todayStr = new Date().toISOString().split('T')[0];
