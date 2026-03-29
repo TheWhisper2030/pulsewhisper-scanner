@@ -2236,16 +2236,13 @@ function logFromSignal(){
   },100);
 }
 
-// Set today's date as default in log form
-document.getElementById('lf-date').value = new Date().toISOString().split('T')[0];
+// [date init moved to DOMContentLoaded]
 
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 updateWinTick(getWin());
-const md=document.getElementById('mkt-dot'),mt=document.getElementById('mkt-txt');
-if(mktOpen()){md.className='sd green';mt.textContent='Market Open';}
-else{md.className='sd gray';mt.textContent='Market Closed';}
+// [mkt-dot init moved to DOMContentLoaded]
 
 // Load saved API key
 loadApiKey();
@@ -2475,11 +2472,11 @@ function renderCalendar(){
     {date:'2026-11-12',type:'cpi',name:'CPI Inflation Report',impact:'high',note:'Consumer Price Index — major vol event'},
     {date:'2026-12-11',type:'cpi',name:'CPI Inflation Report',impact:'high',note:'Consumer Price Index — major vol event'},
     // PCE / GDP
-    {date:'2026-01-30',type:'pce',name:'PCE Inflation + GDP',impact:'high',note:'Fed's preferred inflation measure + growth data'},
-    {date:'2026-03-27',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
-    {date:'2026-06-26',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
-    {date:'2026-09-25',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
-    {date:'2026-12-23',type:'pce',name:'PCE Inflation',impact:'med',note:'Fed's preferred inflation measure'},
+    {date:'2026-01-30',type:'pce',name:'PCE Inflation + GDP',impact:'high',note:"Fed's preferred inflation measure + growth data"},
+    {date:'2026-03-27',type:'pce',name:'PCE Inflation',impact:'med',note:"Fed's preferred inflation measure"},
+    {date:'2026-06-26',type:'pce',name:'PCE Inflation',impact:'med',note:"Fed's preferred inflation measure"},
+    {date:'2026-09-25',type:'pce',name:'PCE Inflation',impact:'med',note:"Fed's preferred inflation measure"},
+    {date:'2026-12-23',type:'pce',name:'PCE Inflation',impact:'med',note:"Fed's preferred inflation measure"},
   ];
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -2530,13 +2527,18 @@ function renderCalendar(){
 }
 
 // ═══ INIT ═══════════════════════════════════════════════════
-updateWinTick(getWin());
-loadApiKey();
-const md=document.getElementById('mkt-dot'),mt=document.getElementById('mkt-txt');
-if(mktOpen()){md.className='mkt-dot green';mt.textContent='Market Open';}
-else{md.className='mkt-dot gray';mt.textContent='Market Closed';}
-document.getElementById('lf-date').value=new Date().toISOString().split('T')[0];
-if(mktOpen()) setTimeout(()=>fetchAndScan(),1000);
+// Wrap in DOMContentLoaded so DOM is ready before we touch it
+document.addEventListener('DOMContentLoaded', function(){
+  updateWinTick(getWin());
+  loadApiKey();
+  const md=document.getElementById('mkt-dot');
+  const mt=document.getElementById('mkt-txt');
+  if(md && mktOpen()){md.className='mkt-dot green';if(mt)mt.textContent='Market Open';}
+  else if(md){md.className='mkt-dot gray';if(mt)mt.textContent='Market Closed';}
+  const lf=document.getElementById('lf-date');
+  if(lf) lf.value=new Date().toISOString().split('T')[0];
+  if(mktOpen()) setTimeout(()=>fetchAndScan(),1500);
+});
 </script>
 </body>
 </html>
