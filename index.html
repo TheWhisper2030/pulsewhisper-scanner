@@ -35,7 +35,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 
 /* ── TICKER BAR ── */
 .ticker-bar{padding:8px 20px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:var(--bg2);}
-@media(max-width:600px){.ticker-bar{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px){.ticker-bar{grid-template-columns:repeat(4,1fr)!important;}}
+@media(max-width:500px){.ticker-bar{grid-template-columns:repeat(2,1fr)!important;}}
 .tick{border-radius:6px;padding:8px 10px;border:1px solid var(--border);background:var(--bg);}
 .tick.pass{border-color:rgba(0,200,120,.3);}
 .tick.fail{border-color:rgba(255,71,87,.3);}
@@ -72,6 +73,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 .le-cs{border-color:rgba(0,229,200,.35);background:rgba(0,229,200,.04);}
 .le-dcs{border-color:rgba(255,140,0,.35);background:rgba(255,140,0,.04);}
 .le-no{border-color:rgba(255,71,87,.25);background:rgba(255,71,87,.04);}
+.le-bwb{border-color:rgba(123,111,255,.35);background:rgba(123,111,255,.04);}
+.le-jl{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.03);}
+.le-cal{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.03);}
+.le-diag{border-color:rgba(255,159,67,.3);background:rgba(255,159,67,.03);}
+.le-bwb .l-title{color:var(--blue);}
+.le-jl  .l-title{color:#00ff88;}
+.le-cal .l-title{color:var(--yellow);}
+.le-diag .l-title{color:#ff9f43;}
+.tc.bwb{border:1px solid rgba(123,111,255,.3);}
+.tc.bwb .tc-title{color:var(--blue);}
+.tc.jl{border:1px solid rgba(0,255,136,.3);}
+.tc.jl .tc-title{color:#00ff88;}
+.tc.cal{border:1px solid rgba(255,215,0,.3);}
+.tc.cal .tc-title{color:var(--yellow);}
+.tc.diag{border:1px solid rgba(255,159,67,.3);}
+.tc.diag .tc-title{color:#ff9f43;}
 .le-wait{border-color:rgba(255,215,0,.25);background:rgba(255,215,0,.03);}
 .le-info{border-color:var(--border);}
 .l-time{font-size:10px;color:var(--muted);margin-bottom:3px;}
@@ -261,9 +278,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 </div>
 
 <!-- TICKER BAR -->
-<div class="ticker-bar">
+<div class="ticker-bar" style="grid-template-columns:repeat(8,1fr);">
   <div class="tick" id="t-vix"><div class="t-lbl">VIX</div><div class="t-val" id="tv-vix" style="color:var(--muted)">--</div><div class="t-sub" id="ts-vix">Loading...</div></div>
   <div class="tick" id="t-spx"><div class="t-lbl">SPX</div><div class="t-val" id="tv-spx" style="color:var(--muted)">--</div><div class="t-sub" id="ts-spx">--</div></div>
+  <div class="tick" id="t-ivr"><div class="t-lbl">IV Rank</div><div class="t-val" id="tv-ivr" style="color:var(--muted)">--</div><div class="t-sub" id="ts-ivr">52wk IVR</div></div>
+  <div class="tick" id="t-vvix"><div class="t-lbl">VVIX</div><div class="t-val" id="tv-vvix" style="color:var(--muted)">--</div><div class="t-sub" id="ts-vvix">Vol of vol</div></div>
+  <div class="tick" id="t-term"><div class="t-lbl">Term Struct</div><div class="t-val" id="tv-term" style="color:var(--muted);font-size:11px">--</div><div class="t-sub" id="ts-term">VIX9D vs VIX</div></div>
   <div class="tick" id="t-em"><div class="t-lbl">Exp Move</div><div class="t-val" id="tv-em" style="color:var(--muted)">--</div><div class="t-sub">±pts today</div></div>
   <div class="tick" id="t-reg"><div class="t-lbl">Regime</div><div class="t-val" id="tv-reg" style="color:var(--muted);font-size:12px">--</div><div class="t-sub" id="ts-reg">--</div></div>
   <div class="tick" id="t-win"><div class="t-lbl">Window</div><div class="t-val" id="tv-win" style="color:var(--muted);font-size:11px">--</div><div class="t-sub" id="ts-win">PST</div></div>
@@ -363,11 +383,17 @@ Click "⟳ Fetch + Scan" to start, or enable Auto for hands-free operation.</div
         <div class="msg-bub">🤖 PulseWhisper AI — I scan live SPX + VIX data, calculate market regime, and recommend the best defined-risk premium strategy.
 
 Strategies (all defined risk, no naked positions):
-🟢 Iron Condor → VIX 12–22, range-bound
-🟡 Iron Butterfly → VIX 12–18, flat market
-🔵 Credit Spread → VIX 22–30, trending
-🟠 Double Credit Spread → VIX 25–35, strong trend
-🔴 No Trade → VIX 35+, event day
+8 defined-risk strategies — zero naked positions:
+
+🦅 Iron Condor → VIX 15–22, range-bound
+🦋 Iron Butterfly → VIX &lt;15, flat/ultra-low vol
+📐 Credit Spread → VIX 22–30, trending market
+⚡ Double Credit Spread → VIX 30–35, extreme trend
+🪃 Broken Wing Butterfly → VIX 22–28, trending + rich premium
+🦎 Jade Lizard → VIX 22–25, bearish + skew elevated
+📅 Calendar Spread → VIX 12–15, flat/pinned market
+📊 Diagonal Spread → VIX 12–15, slight trend
+🚫 No Trade → VIX 35+, event day, VVIX &gt;110
 
 Click "Fetch + Scan" or ask me anything.</div>
       </div>
@@ -573,6 +599,9 @@ Click "Fetch + Scan" or ask me anything.</div>
 let autoScan=false, scanCD=0, cdInt=null;
 let chatHist=[], thinking=false, lastScan=null;
 let liveSpx=null, liveVix=null, liveOpen=null, liveChg=null;
+let liveVvix=null, liveVix9d=null, liveIvr=null;
+let liveVix52High=null, liveVix52Low=null;
+let liveSma20=null, liveGapPct=null, livePrevClose=null;
 
 // ═══════════════════════════════════════════════════
 // CLOCK
@@ -616,109 +645,152 @@ async function fetchLiveData(){
   const dot=document.getElementById('live-dot');
   const txt=document.getElementById('live-txt');
   dot.className='live-dot loading';
-  txt.textContent='Fetching...';
+  txt.textContent='Fetching live data...';
 
-  let gotSpx=false, gotVix=false;
+  // ── 2026 ECONOMIC CALENDAR (hardcoded — published by Fed/BLS annually) ──
+  const eventCalendar2026 = [
+    // FOMC Meetings
+    '2026-01-28','2026-01-29',
+    '2026-03-18','2026-03-19',
+    '2026-04-29','2026-04-30',
+    '2026-06-17','2026-06-18',
+    '2026-07-29','2026-07-30',
+    '2026-09-16','2026-09-17',
+    '2026-11-04','2026-11-05',
+    '2026-12-16','2026-12-17',
+    // NFP Jobs Reports (first Friday of each month)
+    '2026-01-09','2026-02-06','2026-03-06','2026-04-03',
+    '2026-05-08','2026-06-05','2026-07-10','2026-08-07',
+    '2026-09-04','2026-10-02','2026-11-06','2026-12-04',
+    // CPI Releases (approx mid-month)
+    '2026-01-15','2026-02-12','2026-03-12','2026-04-14',
+    '2026-05-13','2026-06-11','2026-07-15','2026-08-13',
+    '2026-09-11','2026-10-14','2026-11-12','2026-12-11',
+    // PCE / GDP major releases
+    '2026-01-30','2026-03-27','2026-06-26','2026-09-25','2026-12-23'
+  ];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrowStr = new Date(Date.now()+86400000).toISOString().split('T')[0];
+  const isEventDay = eventCalendar2026.includes(todayStr);
+  const isEventTomorrow = eventCalendar2026.includes(tomorrowStr);
 
-  // 5 proxy strategies — tries each until one works
+  // ── PROXY LIST ──
   const proxies=[
-    url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
-    url=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    url=>`https://thingproxy.freeboard.io/fetch/${url}`,
-    url=>url  // direct attempt last (may work on some networks)
+    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    u=>`https://thingproxy.freeboard.io/fetch/${u}`,
+    u=>u
   ];
 
-  async function tryFetch(url, timeoutMs=6000){
-    for(const proxyFn of proxies){
+  async function tryFetch(url, ms=7000){
+    for(const p of proxies){
       try{
-        const ctrl=new AbortController();
-        const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
-        const r=await fetch(proxyFn(url),{
-          signal:ctrl.signal,
-          cache:'no-store',
-          headers:{'Accept':'application/json'}
-        });
-        clearTimeout(timer);
-        if(r.ok){
-          const d=await r.json();
-          return d;
-        }
-      }catch(e){ continue; }
+        const c=new AbortController();
+        setTimeout(()=>c.abort(),ms);
+        const r=await fetch(p(url),{signal:c.signal,cache:'no-store'});
+        if(r.ok) return await r.json();
+      }catch(e){continue;}
     }
     return null;
   }
 
-  // ── Fetch SPX ──
+  // ── FETCH SPX (with 20-day history for SMA) ──
+  let gotSpx=false;
   try{
-    // Try v8 chart API first
-    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d');
+    // Use 30d range to get enough bars for 20-day SMA
+    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=30d');
     if(d?.chart?.result?.[0]){
       const meta=d.chart.result[0].meta;
       const quotes=d.chart.result[0].indicators?.quote?.[0];
-      liveSpx=meta?.regularMarketPrice||quotes?.close?.slice(-1)[0];
-      liveOpen=meta?.regularMarketOpen||quotes?.open?.slice(-1)[0];
-      const prevClose=meta?.previousClose||meta?.chartPreviousClose;
-      if(liveSpx&&prevClose) liveChg=((liveSpx-prevClose)/prevClose)*100;
-      if(liveSpx){ gotSpx=true; document.getElementById('inp-spx').value=Math.round(liveSpx); }
-    }
-  }catch(e){}
+      const closes=quotes?.close?.filter(v=>v!=null)||[];
+      const opens=quotes?.open?.filter(v=>v!=null)||[];
 
-  // Try v7 quote API as fallback
-  if(!gotSpx){
-    try{
-      const d=await tryFetch('https://query2.finance.yahoo.com/v7/finance/quote?symbols=%5EGSPC&fields=regularMarketPrice,regularMarketChangePercent,regularMarketOpen');
-      const q=d?.quoteResponse?.result?.[0];
-      if(q?.regularMarketPrice){
-        liveSpx=q.regularMarketPrice;
-        liveChg=q.regularMarketChangePercent||0;
-        liveOpen=q.regularMarketOpen;
-        gotSpx=true;
-        document.getElementById('inp-spx').value=Math.round(liveSpx);
+      liveSpx=meta?.regularMarketPrice||closes[closes.length-1];
+      liveOpen=meta?.regularMarketOpen||opens[opens.length-1];
+      livePrevClose=meta?.previousClose||meta?.chartPreviousClose||closes[closes.length-2];
+
+      if(liveSpx&&livePrevClose){
+        liveChg=((liveSpx-livePrevClose)/livePrevClose)*100;
+        liveGapPct=liveOpen?((liveOpen-livePrevClose)/livePrevClose)*100:0;
       }
-    }catch(e){}
-  }
 
-  // Auto-set direction from price vs open
-  if(gotSpx&&liveOpen){
-    const chg=((liveSpx-liveOpen)/liveOpen)*100;
-    const dir=document.getElementById('inp-dir');
-    if(chg<=-0.3) dir.value='DOWN';
-    else if(chg>=0.3) dir.value='UP';
-    else dir.value='FLAT';
-  }
+      // ── 20-DAY SMA ──
+      if(closes.length>=20){
+        const last20=closes.slice(-20);
+        liveSma20=last20.reduce((s,v)=>s+v,0)/20;
+      }
 
-  // ── Fetch VIX ──
+      if(liveSpx){ gotSpx=true; document.getElementById('inp-spx').value=Math.round(liveSpx); }
+
+      // Auto-detect direction from open vs current
+      if(liveSpx&&liveOpen){
+        const chgFromOpen=((liveSpx-liveOpen)/liveOpen)*100;
+        const dir=document.getElementById('inp-dir');
+        if(chgFromOpen<=-0.3) dir.value='DOWN';
+        else if(chgFromOpen>=0.3) dir.value='UP';
+        else dir.value='FLAT';
+      }
+    }
+  }catch(e){console.warn('SPX fetch:',e.message);}
+
+  // ── FETCH VIX (with 52-week high/low) ──
+  let gotVix=false;
   try{
-    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d');
-    const vp=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if(vp){ liveVix=vp; gotVix=true; document.getElementById('inp-vix').value=vp.toFixed(2); }
-  }catch(e){}
+    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1y');
+    if(d?.chart?.result?.[0]){
+      const meta=d.chart.result[0].meta;
+      const closes=d.chart.result[0].indicators?.quote?.[0]?.close?.filter(v=>v!=null)||[];
 
-  if(!gotVix){
-    try{
-      const d=await tryFetch('https://query2.finance.yahoo.com/v7/finance/quote?symbols=%5EVIX&fields=regularMarketPrice');
-      const vp=d?.quoteResponse?.result?.[0]?.regularMarketPrice;
-      if(vp){ liveVix=vp; gotVix=true; document.getElementById('inp-vix').value=vp.toFixed(2); }
-    }catch(e){}
-  }
+      liveVix=meta?.regularMarketPrice||closes[closes.length-1];
 
-  // ── Update status ──
-  if(gotSpx&&gotVix){
+      // 52-week high and low from price history
+      if(closes.length>0){
+        liveVix52High=Math.max(...closes);
+        liveVix52Low=Math.min(...closes);
+      } else {
+        // fallback to meta fields if available
+        liveVix52High=meta?.fiftyTwoWeekHigh||35;
+        liveVix52Low=meta?.fiftyTwoWeekLow||12;
+      }
+
+      // Calculate IVR
+      if(liveVix&&liveVix52High&&liveVix52Low&&liveVix52High!==liveVix52Low){
+        liveIvr=Math.round(((liveVix-liveVix52Low)/(liveVix52High-liveVix52Low))*100);
+      }
+
+      if(liveVix){ gotVix=true; document.getElementById('inp-vix').value=liveVix.toFixed(2); }
+    }
+  }catch(e){console.warn('VIX fetch:',e.message);}
+
+  // ── FETCH VVIX ──
+  try{
+    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVVIX?interval=1d&range=1d');
+    liveVvix=d?.chart?.result?.[0]?.meta?.regularMarketPrice||null;
+  }catch(e){console.warn('VVIX fetch:',e.message);}
+
+  // ── FETCH VIX9D ──
+  try{
+    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX9D?interval=1d&range=1d');
+    liveVix9d=d?.chart?.result?.[0]?.meta?.regularMarketPrice||null;
+  }catch(e){console.warn('VIX9D fetch:',e.message);}
+
+  // ── Store calendar data globally ──
+  window.isEventDay=isEventDay;
+  window.isEventTomorrow=isEventTomorrow;
+  window.todayStr=todayStr;
+
+  // ── Update status indicator ──
+  const gotBoth=gotSpx&&gotVix;
+  if(gotBoth){
     dot.className='live-dot on';
-    txt.textContent=`Live ✓  SPX ${Math.round(liveSpx).toLocaleString()} | VIX ${liveVix.toFixed(2)}`;
-    document.getElementById('manual-inputs').classList.remove('show');
+    const ivrTxt=liveIvr!==null?` | IVR ${liveIvr}%`:'';
+    const vvixTxt=liveVvix?` | VVIX ${liveVvix.toFixed(0)}`:'';
+    txt.textContent=`Live ✓  SPX ${Math.round(liveSpx).toLocaleString()} | VIX ${liveVix.toFixed(2)}${ivrTxt}${vvixTxt}`;
     return true;
   } else {
     dot.className='live-dot err';
-    const msg=gotSpx?`SPX ${Math.round(liveSpx)} ✓ — VIX fetch failed`:
-               gotVix?`VIX ${liveVix?.toFixed(2)} ✓ — SPX fetch failed`:
-               'Live fetch failed';
-    txt.textContent=`${msg} — update fields below manually`;
-    document.getElementById('manual-inputs').classList.add('show');
-    // Show manual inputs prominently
-    document.getElementById('manual-inputs').style.background='rgba(255,215,0,0.05)';
-    document.getElementById('manual-inputs').style.borderTop='1px solid rgba(255,215,0,0.3)';
+    txt.textContent=`${gotSpx?'SPX ✓':'SPX ✗'} ${gotVix?'VIX ✓':'VIX ✗'} — update fields manually`;
     return false;
   }
 }
@@ -765,84 +837,187 @@ function runScan(){
   const vixPass=vix<35;
   const winPass=win==='PRIMARY'||win==='SECONDARY';
 
-  // ── REGIME + STRATEGY SELECTION ──
-  // Rules:
-  //   VIX 35+                          → NO_TRADE (too dangerous)
-  //   VIX 25-35 + trending (any dir)   → DOUBLE_CREDIT_SPREAD
-  //   VIX 25-35 + flat                 → CREDIT_SPREAD (bear call — defensive)
-  //   VIX 22-25 + trending             → CREDIT_SPREAD (directional)
-  //   VIX 22-25 + flat                 → IRON_CONDOR (borderline, use wider wings)
-  //   VIX 15-22 + any                  → IRON_CONDOR (ideal zone)
-  //   VIX 12-15 + flat                 → IRON_BUTTERFLY (low vol, max premium)
-  //   VIX < 12                         → IRON_BUTTERFLY
-  // KEY: Iron Condor is ONLY recommended when VIX < 22. Above 22 = credit spread territory.
+  // ── ENHANCED REGIME DETECTION — 8 FACTORS ──
+  // Factor 1: VIX level
+  // Factor 2: Direction
+  // Factor 3: IVR — are we selling rich or cheap premium?
+  // Factor 4: VVIX — is vol itself volatile?
+  // Factor 5: VIX9D vs VIX — contango or backwardation?
+  // Factor 6: SPX vs 20-day SMA — objective trend confirmation
+  // Factor 7: Gap size — was there an abnormal open?
+  // Factor 8: Economic calendar — event day block
 
-  let regime, strategy, strat_why;
-  const isTrending = direction !== 'FLAT';
+  // Pull live data into local vars with safe fallbacks
+  const ivr = liveIvr!==null ? liveIvr : 50; // default to neutral if unavailable
+  const vvix = liveVvix || 95;
+  const vix9d = liveVix9d || vix;
+  const sma20 = liveSma20 || spx;
+  const gapPct = liveGapPct || 0;
+  const eventDay = window.isEventDay || false;
+  const eventTomorrow = window.isEventTomorrow || false;
 
-  if(vix >= 35){
-    regime='DANGER'; strategy='NO_TRADE';
-    strat_why='VIX ≥35 — extreme volatility, expect 2%+ daily moves. No premium selling today. Wait for VIX to drop below 28.';
-
-  } else if(vix >= 25 && isTrending){
-    regime='STRESS_TREND'; strategy='DOUBLE_CREDIT_SPREAD';
-    strat_why=`VIX ${vix.toFixed(1)} + strong ${direction} trend → Double Credit Spread. One bear call spread AND one bull put spread, 15pt wings each, 30Δ shorts. Sell both sides far OTM.`;
-
-  } else if(vix >= 25 && !isTrending){
-    // High VIX but flat — use a single defensive credit spread on the safer side
-    regime='STRESS_TREND'; strategy='CREDIT_SPREAD';
-    strat_why=`VIX ${vix.toFixed(1)} elevated + flat market → Bear Call Spread (default to selling calls above market). High VIX means wide expected move — stay defensive, 10pt wings.`;
-
-  } else if(vix >= 22 && isTrending){
-    regime='HIGH_VOL_TREND'; strategy='CREDIT_SPREAD';
-    strat_why=`VIX ${vix.toFixed(1)} + ${direction} trend → ${direction==='DOWN'?'Bear Call Spread — sell calls above a falling market (market must rally through your strike to hurt you)':'Bull Put Spread — sell puts below a rising market'}. 10pt wings, 30Δ short strike.`;
-
-  } else if(vix >= 22 && !isTrending){
-    // VIX 22-25 but flat — condor works but use wider wings
-    regime='NORMAL_RANGE'; strategy='IRON_CONDOR';
-    strat_why=`VIX ${vix.toFixed(1)} elevated but range-bound → Iron Condor. Use 10pt wings (wider than normal) and 15Δ short strikes to account for elevated vol. Expected move is wide.`;
-
-  } else if(vix >= 15){
-    regime='NORMAL_RANGE'; strategy='IRON_CONDOR';
-    strat_why=`VIX ${vix.toFixed(1)} normal range → Iron Condor. 5pt wings, 18-20Δ short strikes. Ideal environment for this strategy.`;
-
-  } else if(vix >= 12){
-    regime='LOW_VOL_TREND'; strategy='IRON_CONDOR';
-    strat_why=`VIX ${vix.toFixed(1)} low vol → Iron Condor. Can use tighter strikes (20-22Δ) for more credit since expected move is small.`;
-
-  } else {
-    regime='CALM_RANGE'; strategy='IRON_BUTTERFLY';
-    strat_why=`VIX ${vix.toFixed(1)} very low, flat market → Iron Butterfly ATM. Maximum premium collection in ultra-low-vol environment.`;
+  // ── HARD BLOCK CONDITIONS ──
+  let hardBlock = null;
+  if(eventDay){
+    hardBlock = `⚠️ MAJOR ECONOMIC EVENT TODAY (${window.todayStr}) — FOMC / NFP / CPI / PPI. No premium selling. Capital preservation mode.`;
+  } else if(vix>=35){
+    hardBlock = `VIX ${vix.toFixed(1)} ≥35 — extreme volatility. Expected moves exceed 2% per day. No strategy has edge here.`;
+  } else if(vvix>110){
+    hardBlock = `VVIX ${vvix.toFixed(0)} >110 — volatility is itself volatile. VIX can spike 30%+ in minutes. Too dangerous to sell premium today.`;
+  } else if(Math.abs(gapPct)>1.5){
+    hardBlock = `Gap open of ${gapPct.toFixed(2)}% exceeds 1.5% threshold — market declared strong directional intent at open. Wait for next session.`;
   }
 
-  // Strikes
-  let l1=null,l2=null,l3=null,l4=null;
+  // ── IVR QUALITY FILTER ──
+  let ivrWarning = null;
+  if(ivr < 30){
+    ivrWarning = `⚠️ IVR ${ivr}% — you are selling CHEAP premium. Options are historically inexpensive right now. Consider waiting for IVR > 30 before selling.`;
+  } else if(ivr > 80){
+    ivrWarning = `✅ IVR ${ivr}% — premium is historically EXPENSIVE. Excellent environment for selling. Edge is elevated.`;
+  }
+
+  // ── VIX TERM STRUCTURE ──
+  let termStructure = 'NEUTRAL';
+  let termNote = '';
+  if(liveVix9d!==null){
+    if(vix9d > vix * 1.02){
+      termStructure = 'BACKWARDATION';
+      termNote = `VIX9D (${vix9d.toFixed(1)}) > VIX (${vix.toFixed(1)}) — short-term fear elevated. 0DTE premium richest it will be. Best selling environment.`;
+    } else if(vix9d < vix * 0.98){
+      termStructure = 'CONTANGO';
+      termNote = `VIX9D (${vix9d.toFixed(1)}) < VIX (${vix.toFixed(1)}) — market calm short-term. Reduce position size today.`;
+    } else {
+      termNote = `VIX term structure flat — neutral signal.`;
+    }
+  }
+
+  // ── SPX vs 20-DAY SMA ──
+  let smaBias = 'NEUTRAL';
+  let smaNote = '';
+  if(liveSma20!==null){
+    const smaDiff = ((spx - sma20) / sma20) * 100;
+    if(smaDiff > 1.5){
+      smaBias = 'BULLISH';
+      smaNote = `SPX ${smaDiff.toFixed(1)}% above 20-day SMA (${Math.round(sma20)}) — confirmed uptrend. Lean bull put spreads.`;
+    } else if(smaDiff < -1.5){
+      smaBias = 'BEARISH';
+      smaNote = `SPX ${Math.abs(smaDiff).toFixed(1)}% below 20-day SMA (${Math.round(sma20)}) — confirmed downtrend. Lean bear call spreads.`;
+    } else {
+      smaNote = `SPX within 1.5% of 20-day SMA (${Math.round(sma20)}) — range-bound. Iron condor conditions.`;
+    }
+  }
+
+  // ── REFINE DIRECTION USING SMA BIAS ──
+  // SMA bias overrides manual direction if strongly contradicting
+  let effectiveDirection = direction;
+  if(smaBias==='BEARISH' && direction==='UP') effectiveDirection='DOWN';
+  if(smaBias==='BULLISH' && direction==='DOWN') effectiveDirection='UP';
+
+  // ── EVENT TOMORROW WARNING ──
+  let tomorrowNote = eventTomorrow ?
+    '⚠️ Major economic event TOMORROW — avoid 1DTE trades. 0DTE only today.' : '';
+
+  // ── STRATEGY SELECTION — 8 STRATEGIES ──
+  // Full matrix: VIX + Direction + IVR + Term Structure
+  let regime, strategy, strat_why;
+  const isTrending = effectiveDirection !== 'FLAT';
+  const isBullish = effectiveDirection === 'UP';
+  const isBearish = effectiveDirection === 'DOWN';
+  const isBackwardation = liveVix9d && liveVix9d > vix * 1.02;
+  const isRichPremium = ivr >= 50;
+
+  if(hardBlock){
+    // ── HARD BLOCK ──
+    regime='NO_TRADE'; strategy='NO_TRADE';
+    strat_why=hardBlock;
+
+  } else if(vix>=30&&isTrending){
+    // ── EXTREME STRESS TRENDING ── Double Credit Spread
+    regime='STRESS_TREND'; strategy='DOUBLE_CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} extreme + ${effectiveDirection} trend → Double Credit Spread. Two separate spreads (bear call + bull put), 15pt wings, 30Δ shorts. IVR ${ivr}%.`;
+
+  } else if(vix>=25&&isTrending&&isRichPremium){
+    // ── HIGH STRESS TRENDING + RICH PREMIUM ── Broken Wing Butterfly
+    // BWB gives more credit than a simple spread and eliminates one side of risk
+    regime='STRESS_TREND'; strategy='BROKEN_WING_BUTTERFLY';
+    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% rich → Broken Wing Butterfly. Higher credit than credit spread, zero risk on the ${isBearish?'call (upside)':'put (downside)'} side. Ideal when premium is historically expensive.`;
+
+  } else if(vix>=25&&isTrending&&!isRichPremium){
+    // ── HIGH STRESS TRENDING + CHEAP PREMIUM ── Standard Credit Spread
+    regime='STRESS_TREND'; strategy='CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% (moderate) → ${isBearish?'Bear Call Spread':'Bull Put Spread'}. Premium not rich enough for BWB. 10pt wings, 28-32Δ.`;
+
+  } else if(vix>=25&&!isTrending){
+    // ── HIGH STRESS FLAT ── Defensive Credit Spread (bear call default)
+    regime='STRESS_TREND'; strategy='CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} elevated + flat market → Defensive Bear Call Spread above market. High VIX = wide EM, stay far OTM. 10pt wings. IVR ${ivr}%.`;
+
+  } else if(vix>=22&&isTrending&&smaBias==='BEARISH'){
+    // ── HIGH VOL BEARISH TREND ── Jade Lizard (bearish version)
+    // Sells OTM put spread + OTM call. Call credit eliminates upside risk.
+    regime='HIGH_VOL_TREND'; strategy='JADE_LIZARD';
+    strat_why=`VIX ${vix.toFixed(1)} + confirmed bearish trend (SPX below 20-SMA) → Jade Lizard. Sell OTM put spread + sell OTM call. If total credit > call distance, zero upside risk. Profits from downside premium richness.`;
+
+  } else if(vix>=22&&isTrending&&smaBias!=='BEARISH'){
+    // ── HIGH VOL BULLISH/NEUTRAL TREND ── Standard Credit Spread
+    regime='HIGH_VOL_TREND'; strategy='CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend → ${isBearish?'Bear Call Spread — sell calls above falling market':'Bull Put Spread — sell puts below rising market'}. 10pt wings, 28-32Δ. IVR ${ivr}%.`;
+
+  } else if(vix>=22&&!isTrending){
+    // ── HIGH VOL FLAT ── Wide Iron Condor (10pt wings)
+    regime='NORMAL_RANGE'; strategy='IRON_CONDOR';
+    strat_why=`VIX ${vix.toFixed(1)} elevated but range-bound → Iron Condor with wider 10pt wings to account for elevated EM. 15Δ short strikes. IVR ${ivr}%.`;
+
+  } else if(vix>=18&&vix<22&&isTrending&&isRichPremium){
+    // ── NORMAL VOL TRENDING + RICH PREMIUM ── Broken Wing Butterfly
+    regime='NORMAL_RANGE'; strategy='BROKEN_WING_BUTTERFLY';
+    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% rich → Broken Wing Butterfly. Better credit/risk than standard condor when market has directional bias. Zero risk on ${isBearish?'upside':'downside'}.`;
+
+  } else if(vix>=15&&vix<22){
+    // ── IDEAL IRON CONDOR ZONE ── Standard Iron Condor
+    regime='NORMAL_RANGE'; strategy='IRON_CONDOR';
+    strat_why=`VIX ${vix.toFixed(1)} — ideal iron condor environment. 5pt wings, 18-20Δ short strikes. IVR ${ivr}% — ${ivr>=50?'premium rich, excellent entry':'premium moderate'}. ${isBackwardation?'Term structure in backwardation — 0DTE premium at peak.':''}`;
+
+  } else if(vix>=12&&vix<15&&!isTrending){
+    // ── LOW VOL FLAT ── Calendar Spread (pure theta play)
+    regime='LOW_VOL_TREND'; strategy='CALENDAR_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} low + flat market → Calendar Spread. Sell today's ATM option, buy same strike next week. Near-term option decays faster. Pure theta without directional risk. IVR ${ivr}%.`;
+
+  } else if(vix>=12&&vix<15&&isTrending){
+    // ── LOW VOL TRENDING ── Diagonal Spread
+    regime='LOW_VOL_TREND'; strategy='DIAGONAL_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} low + ${effectiveDirection} trend → Diagonal Spread. Sell short-dated OTM option, buy longer-dated further OTM option. Collects premium with directional lean and defined risk. IVR ${ivr}%.`;
+
+  } else {
+    // ── ULTRA LOW VOL ── Iron Butterfly
+    regime='CALM_RANGE'; strategy='IRON_BUTTERFLY';
+    strat_why=`VIX ${vix.toFixed(1)} very low → Iron Butterfly ATM. Sell ATM straddle with 20pt wings. Maximum premium collection in calm market.`;
+  }
+
+  // Collect all enhancement notes
+  const enhancedNotes = [ivrWarning, termNote, smaNote, tomorrowNote].filter(Boolean);
+
+    let l1=null,l2=null,l3=null,l4=null;
   let l1_lbl='',l2_lbl='',l3_lbl=null,l4_lbl=null;
   let pzone=null,pzone_w=null,expiry='0DTE — today (SPXW PM)',wing='5 pts';
   let credit='',risk='',profit_tgt='',stopStr='';
 
   if(strategy==='IRON_CONDOR'){
-    // STRIKE PLACEMENT BY VIX LEVEL:
-    // VIX 15-22 (ideal): 18-20Δ short strikes = ~1.0x EM from spot, 5pt wings
-    // VIX 22-25 (elevated): 15Δ short strikes = ~0.85x EM from spot, 10pt wings
-    // Wider wings + closer strikes when VIX elevated = meaningful credit
-    const isHighVix = vix >= 22;
-    const emMult = isHighVix ? 0.85 : 1.0;
-    const ww = isHighVix ? 10 : 5;
-
-    l2 = Math.floor((spx-(em*emMult))/5)*5;  // short put
-    l1 = l2 - ww;                              // long put (wing)
-    l3 = Math.ceil((spx+(em*emMult))/5)*5;    // short call
-    l4 = l3 + ww;                              // long call (wing)
-
+    const isHighVix=vix>=22;
+    const emMult=isHighVix?0.85:1.0;
+    const ww=isHighVix?10:5;
+    l2=Math.floor((spx-(em*emMult))/5)*5;
+    l1=l2-ww;
+    l3=Math.ceil((spx+(em*emMult))/5)*5;
+    l4=l3+ww;
     l1_lbl='Long Put (BUY wing)'; l2_lbl='Short Put (SELL)';
     l3_lbl='Short Call (SELL)'; l4_lbl='Long Call (BUY wing)';
-    pzone=`${l2.toLocaleString()} \u2194 ${l3.toLocaleString()}`; pzone_w=l3-l2;
+    pzone=`${l2.toLocaleString()} ↔ ${l3.toLocaleString()}`; pzone_w=l3-l2;
     wing=`${ww} pts`;
-    credit = isHighVix ? '$1.20-$2.50' : '$1.80-$3.50';
-    risk = `~$${ww*100 - (isHighVix?150:175)}-$${ww*100 - 50} per contract`;
+    credit=isHighVix?'$1.20–$2.50':'$1.80–$3.50';
+    risk=`~$${ww*100-200}–$${ww*100-50} per contract`;
     profit_tgt='Close at 50% of credit received';
-    stopStr='Close if debit to close = 2x credit received';
+    stopStr='Close if debit to close = 2× credit received';
 
   } else if(strategy==='IRON_BUTTERFLY'){
     l1=r5-20; l2=r5; l3=r5; l4=r5+20;
@@ -851,19 +1026,17 @@ function runScan(){
     wing='20 pts';
     pzone=`${(r5-5).toLocaleString()} ↔ ${(r5+5).toLocaleString()}`; pzone_w=10;
     credit='$5.00–$9.00'; risk='~$1,100–$1,500 per contract';
-    profit_tgt='Close at 25% of credit — narrow zone, take profit quickly';
+    profit_tgt='Close at 25% of credit — narrow zone, exit early';
     stopStr='Close if loss = 1× credit received';
 
   } else if(strategy==='CREDIT_SPREAD'){
-    const isBear=direction==='DOWN'||direction==='FLAT';
+    const isBear=effectiveDirection==='DOWN'||effectiveDirection==='FLAT';
     expiry=vix>27?'1-week (SPXW)':'0DTE — today (SPXW PM)'; wing='10 pts';
     if(isBear){
-      // Bear Call: short call at ~0.8x EM above spot = 28-32 delta = real premium
       l1=Math.ceil((spx+(em*0.8))/5)*5; l2=l1+10;
       l1_lbl='Short Call (SELL)'; l2_lbl='Long Call (BUY wing)';
       pzone=`SPX stays below ${l1.toLocaleString()} at expiry`;
     } else {
-      // Bull Put: short put at ~0.8x EM below spot = 28-32 delta = real premium
       l1=Math.floor((spx-(em*0.8))/5)*5; l2=l1-10;
       l1_lbl='Short Put (SELL)'; l2_lbl='Long Put (BUY wing)';
       pzone=`SPX stays above ${l1.toLocaleString()} at expiry`;
@@ -873,7 +1046,6 @@ function runScan(){
     stopStr='Close if debit to close = 2× credit received';
 
   } else if(strategy==='DOUBLE_CREDIT_SPREAD'){
-    // DCS: 0.85x EM each side = 28-30 delta = enough credit to justify risk
     const ps=Math.floor((spx-(em*0.85))/5)*5;
     const cs=Math.ceil((spx+(em*0.85))/5)*5;
     l1=ps; l2=ps-15; l3=cs; l4=cs+15;
@@ -883,10 +1055,111 @@ function runScan(){
     pzone=`${ps.toLocaleString()} ↔ ${cs.toLocaleString()}`; pzone_w=cs-ps;
     credit='$0.80–$1.50 per side'; risk='~$1,200–$1,350 combined';
     profit_tgt='Close each spread independently at 50% profit';
-    stopStr='Close each spread if loss = 2× that spread\'s credit';
+    stopStr='Close each spread if loss = 2× that spread credit';
+
+  } else if(strategy==='BROKEN_WING_BUTTERFLY'){
+    // BWB: Buy 1 far wing, Sell 2 near strikes, Buy 1 ATM or near-ATM
+    // Bearish BWB: skewed to profit from downside, zero upside risk
+    // Bullish BWB: skewed to profit from upside, zero downside risk
+    const isBearBWB = effectiveDirection==='DOWN'||effectiveDirection==='FLAT';
+    wing='Asymmetric (5/10 pts)';
+    expiry='0DTE — today (SPXW PM)';
+    if(isBearBWB){
+      // Bearish BWB: wider put wing = zero upside risk
+      // Buy 1 put 20pts below, Sell 2 puts 10pts below, Buy 1 call 10pts above
+      const shortStrike = Math.floor((spx-(em*0.6))/5)*5;
+      l1=shortStrike-15; // long put (wide wing)
+      l2=shortStrike;    // short put ×2 (note: show as ×2 in card)
+      l3=Math.ceil((spx+(em*0.8))/5)*5; // short call (OTM)
+      l4=l3+10; // long call (narrow wing — this side has zero risk if credit covers)
+      l1_lbl='Long Put — BUY ×1 (wide wing)';
+      l2_lbl='Short Put — SELL ×2';
+      l3_lbl='Short Call — SELL ×1';
+      l4_lbl='Long Call — BUY ×1 (narrow wing)';
+      pzone=`Max profit near ${shortStrike.toLocaleString()} — profits if SPX drifts down`;
+    } else {
+      // Bullish BWB: wider call wing = zero downside risk
+      const shortStrike = Math.ceil((spx+(em*0.6))/5)*5;
+      l1=Math.floor((spx-(em*0.8))/5)*5; // short put (OTM)
+      l2=l1-10; // long put (narrow wing)
+      l3=shortStrike; // short call ×2
+      l4=shortStrike+15; // long call (wide wing)
+      l1_lbl='Short Put — SELL ×1';
+      l2_lbl='Long Put — BUY ×1 (narrow wing)';
+      l3_lbl='Short Call — SELL ×2';
+      l4_lbl='Long Call — BUY ×1 (wide wing)';
+      pzone=`Max profit near ${shortStrike.toLocaleString()} — profits if SPX drifts up`;
+    }
+    credit='$1.50–$4.00 (net credit at entry)';
+    risk=`~$300–$800 on ${isBearBWB?'downside (upside has zero risk)':'upside (downside has zero risk)'}`;
+    profit_tgt='Close at 50% of max profit or when near short strikes';
+    stopStr='Close if loss exceeds 2× credit received';
+
+  } else if(strategy==='JADE_LIZARD'){
+    // Jade Lizard: Sell OTM put spread + Sell OTM call (no call wing needed if credit covers)
+    // Zero upside risk when: put spread credit + call credit > call strike distance from spot
+    const putShort=Math.floor((spx-(em*0.8))/5)*5;
+    const putLong=putShort-10;
+    const callShort=Math.ceil((spx+(em*0.9))/5)*5;
+    l1=putLong;   // long put (wing)
+    l2=putShort;  // short put
+    l3=callShort; // short call (naked but credit-covered)
+    l4=null;      // NO long call wing — credit covers upside risk
+    l1_lbl='Long Put (BUY wing — defines put side risk)';
+    l2_lbl='Short Put (SELL)';
+    l3_lbl='Short Call (SELL — upside risk covered by total credit)';
+    l4_lbl=null;
+    wing='10 pts put side / call uncovered (credit-covered)';
+    expiry='0DTE — today (SPXW PM)';
+    pzone=`Above ${putShort.toLocaleString()} (put side) | Below ${callShort.toLocaleString()} (call side)`;
+    credit='$1.50–$3.50 (combined put spread + call)';
+    risk=`~$650–$850 on put side only — ZERO upside risk if credit > ${callShort-spx} pts`;
+    profit_tgt='Close at 50% of total credit received';
+    stopStr='Close put spread if loss = 2× put spread credit. Close call separately.';
+
+  } else if(strategy==='CALENDAR_SPREAD'){
+    // Calendar: Sell 0DTE ATM option, Buy same strike 7DTE option
+    // Pure theta — near-term decays faster than far-term
+    const atmStrike=r5;
+    l1=atmStrike; // sell near-term (0DTE)
+    l2=atmStrike; // buy far-term (7DTE) — SAME STRIKE
+    l1_lbl=`Short Call/Put ${atmStrike} — SELL (0DTE today)`;
+    l2_lbl=`Long Call/Put ${atmStrike} — BUY (7DTE next week)`;
+    l3_lbl=null; l4_lbl=null;
+    wing='Same strike, different expiry';
+    expiry='Near: 0DTE today | Far: 7DTE next week';
+    pzone=`SPX stays near ${atmStrike.toLocaleString()} through today`;
+    credit='Net debit $0.50–$2.00 (max loss is debit paid)';
+    risk='Max risk = debit paid at entry (typically $50–$200)';
+    profit_tgt='Close when near-term option decays 50%+ of its value';
+    stopStr='Close if SPX moves more than 1× EM away from strike';
+
+  } else if(strategy==='DIAGONAL_SPREAD'){
+    // Diagonal: Sell short-dated OTM option, Buy longer-dated further OTM option
+    const isBearDiag=effectiveDirection==='DOWN';
+    expiry='Near: 0DTE today | Far: 7DTE next week';
+    if(isBearDiag){
+      l1=Math.ceil((spx+(em*0.7))/5)*5; // sell 0DTE OTM call
+      l2=Math.ceil((spx+(em*1.0))/5)*5; // buy 7DTE further OTM call
+      l1_lbl=`Short Call ${l1} — SELL (0DTE, ~25Δ)`;
+      l2_lbl=`Long Call ${l2} — BUY (7DTE, ~15Δ)`;
+      pzone=`SPX stays below ${l1.toLocaleString()} today`;
+    } else {
+      l1=Math.floor((spx-(em*0.7))/5)*5; // sell 0DTE OTM put
+      l2=Math.floor((spx-(em*1.0))/5)*5; // buy 7DTE further OTM put
+      l1_lbl=`Short Put ${l1} — SELL (0DTE, ~25Δ)`;
+      l2_lbl=`Long Put ${l2} — BUY (7DTE, ~15Δ)`;
+      pzone=`SPX stays above ${l1.toLocaleString()} today`;
+    }
+    l3_lbl=null; l4_lbl=null;
+    wing='Different strikes, different expiry';
+    credit='$0.30–$1.20 net credit';
+    risk='~$200–$600 (difference in strike value minus credit)';
+    profit_tgt='Close near-term leg at 50% decay, keep or roll long leg';
+    stopStr='Close both legs if short strike breached';
   }
 
-  // ── MINIMUM CREDIT SANITY CHECK ──
+    // ── MINIMUM CREDIT SANITY CHECK ──
   // Estimate approximate credit based on strategy and VIX
   // If estimated credit < $0.50 total, warn the user — trade math doesn't work
   let creditWarning = null;
@@ -925,7 +1198,13 @@ function runScan(){
     l1_lbl,l1,l2_lbl,l2,l3_lbl:l3_lbl||null,l3:l3||null,
     l4_lbl:l4_lbl||null,l4:l4||null,
     pzone,pzone_w,expiry,credit,risk,profit_tgt,
-    stop:stopStr,close_pst:'12:45 PM PST',wing,creditWarning};
+    stop:stopStr,close_pst:'12:45 PM PST',wing,creditWarning,
+    ivr:liveIvr, vvix:liveVvix, vix9d:liveVix9d,
+    sma20:liveSma20, gapPct:liveGapPct,
+    termStructure, enhancedNotes,
+    isEventDay:window.isEventDay||false,
+    isEventTomorrow:window.isEventTomorrow||false,
+    hardBlock, ivrWarning};
 
   lastScan=sc;
   updateTickers(sc);
@@ -940,11 +1219,15 @@ function runScan(){
 // ═══════════════════════════════════════════════════
 function renderResult(sc,ts){
   const SM={
-    IRON_CONDOR:{cls:'le-ic',cc:'ic',clr:'var(--green)',em:'🦅',nm:'IRON CONDOR — 5pt Wings'},
-    IRON_BUTTERFLY:{cls:'le-ib',cc:'ib',clr:'var(--accent)',em:'🦋',nm:'IRON BUTTERFLY — ATM'},
-    CREDIT_SPREAD:{cls:'le-cs',cc:'cs',clr:'var(--teal)',em:'📐',nm:'CREDIT SPREAD — Directional'},
-    DOUBLE_CREDIT_SPREAD:{cls:'le-dcs',cc:'dcs',clr:'var(--orange)',em:'⚡',nm:'DOUBLE CREDIT SPREAD'},
-    NO_TRADE:{cls:'le-no',cc:'wait',clr:'var(--red)',em:'🚫',nm:'NO TRADE'}
+    IRON_CONDOR:        {cls:'le-ic',  cc:'ic',  clr:'var(--green)',  em:'🦅', nm:'IRON CONDOR — 5pt Wings'},
+    IRON_BUTTERFLY:     {cls:'le-ib',  cc:'ib',  clr:'var(--accent)', em:'🦋', nm:'IRON BUTTERFLY — ATM'},
+    CREDIT_SPREAD:      {cls:'le-cs',  cc:'cs',  clr:'var(--teal)',   em:'📐', nm:'CREDIT SPREAD — Directional'},
+    DOUBLE_CREDIT_SPREAD:{cls:'le-dcs',cc:'dcs', clr:'var(--orange)', em:'⚡', nm:'DOUBLE CREDIT SPREAD'},
+    BROKEN_WING_BUTTERFLY:{cls:'le-bwb',cc:'bwb',clr:'var(--blue)',   em:'🪃', nm:'BROKEN WING BUTTERFLY'},
+    JADE_LIZARD:        {cls:'le-jl',  cc:'jl',  clr:'#00ff88',       em:'🦎', nm:'JADE LIZARD'},
+    CALENDAR_SPREAD:    {cls:'le-cal', cc:'cal', clr:'var(--yellow)', em:'📅', nm:'CALENDAR SPREAD — Theta Play'},
+    DIAGONAL_SPREAD:    {cls:'le-diag',cc:'diag',clr:'#ff9f43',       em:'📊', nm:'DIAGONAL SPREAD'},
+    NO_TRADE:           {cls:'le-no',  cc:'wait',clr:'var(--red)',     em:'🚫', nm:'NO TRADE'}
   };
   const s=sc.strategy||'NO_TRADE';
   const sm=SM[s]||SM.NO_TRADE;
@@ -956,6 +1239,10 @@ function renderResult(sc,ts){
               `${sm.em} ${sm.nm} — ENTER TRADE`;
 
   let body=`<strong style="color:${sm.clr}">${sc.regime}</strong> — ${sc.regime_why}\n`;
+  // Show enhanced analysis notes
+  if(sc.enhancedNotes&&sc.enhancedNotes.length>0){
+    body+=`\n${sc.enhancedNotes.join('\n')}\n`;
+  }
   body+=`VIX: <strong style="color:${sc.vix<25?'var(--green)':'var(--orange)'}">${sc.vix}</strong>  `;
   body+=`SPX: <strong>${sc.spx?.toLocaleString()}</strong> (${sc.direction})  `;
   body+=`Expected Move: ±${sc.em} pts\n`;
@@ -976,50 +1263,146 @@ function renderResult(sc,ts){
 function buildCard(sc,sm){
   const s=sc.strategy;
   let strikes='';
+
   if(s==='IRON_CONDOR'){
     strikes=`<div class="sg sg2">
       <div class="sb put"><div class="sbl">PUT SIDE</div><div class="sba">BUY (wing)</div><div class="sbp sm" style="color:var(--red)">${sc.l1}</div><div class="sb-div" style="background:rgba(255,71,87,.2)"></div><div class="sba">SELL (short)</div><div class="sbp big" style="color:var(--red)">${sc.l2}</div></div>
       <div class="sb call"><div class="sbl">CALL SIDE</div><div class="sba">SELL (short)</div><div class="sbp big" style="color:var(--green)">${sc.l3}</div><div class="sb-div" style="background:rgba(0,200,120,.2)"></div><div class="sba">BUY (wing)</div><div class="sbp sm" style="color:var(--green)">${sc.l4}</div></div>
     </div>`;
+
   } else if(s==='IRON_BUTTERFLY'){
     strikes=`<div class="sg sg2">
       <div class="sb put"><div class="sbl">PUT SIDE</div><div class="sba">BUY long put</div><div class="sbp sm" style="color:var(--red)">${sc.l1}</div><div class="sb-div" style="background:rgba(255,71,87,.2)"></div><div class="sba">SELL ATM put</div><div class="sbp big" style="color:var(--accent)">${sc.l2}</div></div>
       <div class="sb atm"><div class="sbl">CALL SIDE</div><div class="sba">SELL ATM call</div><div class="sbp big" style="color:var(--accent)">${sc.l3}</div><div class="sb-div" style="background:rgba(200,255,0,.2)"></div><div class="sba">BUY long call</div><div class="sbp sm" style="color:var(--accent)">${sc.l4}</div></div>
     </div>`;
+
   } else if(s==='CREDIT_SPREAD'){
     const isBear=(sc.l1_lbl||'').toLowerCase().includes('call');
     strikes=`<div class="sg sg1"><div class="sb ${isBear?'bear':'bull'}">
-      <div class="sbl">${isBear?'BEAR CALL SPREAD — market trending DOWN':'BULL PUT SPREAD — market trending UP'}</div>
+      <div class="sbl">${isBear?'BEAR CALL SPREAD — market DOWN':'BULL PUT SPREAD — market UP'}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
         <div><div class="sba">${sc.l1_lbl}</div><div class="sbp big" style="color:${isBear?'var(--teal)':'var(--green)'};font-size:24px;">${sc.l1}</div></div>
         <div><div class="sba">${sc.l2_lbl}</div><div class="sbp big" style="color:var(--muted2);font-size:24px;">${sc.l2}</div></div>
       </div>
     </div></div>`;
+
   } else if(s==='DOUBLE_CREDIT_SPREAD'){
     strikes=`<div class="sg sg2">
       <div class="sb dbl"><div class="sbl">BULL PUT SPREAD</div><div class="sba">SELL put</div><div class="sbp big" style="color:var(--orange)">${sc.l1}</div><div class="sb-div" style="background:rgba(255,140,0,.2)"></div><div class="sba">BUY put (wing)</div><div class="sbp sm" style="color:var(--muted2)">${sc.l2}</div></div>
       <div class="sb dbl"><div class="sbl">BEAR CALL SPREAD</div><div class="sba">SELL call</div><div class="sbp big" style="color:var(--orange)">${sc.l3}</div><div class="sb-div" style="background:rgba(255,140,0,.2)"></div><div class="sba">BUY call (wing)</div><div class="sbp sm" style="color:var(--muted2)">${sc.l4}</div></div>
     </div>`;
+
+  } else if(s==='BROKEN_WING_BUTTERFLY'){
+    const isBearBWB=(sc.l1_lbl||'').toLowerCase().includes('put');
+    strikes=`<div style="background:rgba(123,111,255,.06);border:1px solid rgba(123,111,255,.2);border-radius:8px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">BROKEN WING BUTTERFLY — ${isBearBWB?'BEARISH (zero upside risk)':'BULLISH (zero downside risk)'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="text-align:center;padding:8px;background:rgba(255,71,87,.06);border-radius:5px;border:1px solid rgba(255,71,87,.15);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${sc.l1_lbl}</div>
+          <div style="font-family:var(--sans);font-size:20px;font-weight:800;color:var(--red)">${sc.l1}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:rgba(123,111,255,.06);border-radius:5px;border:1px solid rgba(123,111,255,.15);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${sc.l2_lbl}</div>
+          <div style="font-family:var(--sans);font-size:20px;font-weight:800;color:var(--blue)">${sc.l2}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:rgba(0,229,200,.06);border-radius:5px;border:1px solid rgba(0,229,200,.15);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${sc.l3_lbl}</div>
+          <div style="font-family:var(--sans);font-size:20px;font-weight:800;color:var(--teal)">${sc.l3}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:rgba(0,200,120,.06);border-radius:5px;border:1px solid rgba(0,200,120,.15);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${sc.l4_lbl}</div>
+          <div style="font-family:var(--sans);font-size:20px;font-weight:800;color:var(--green)">${sc.l4}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:6px;background:rgba(123,111,255,.08);border-radius:4px;font-size:10px;color:var(--blue);text-align:center;">
+        ${isBearBWB?'⚡ Zero upside risk — call side fully covered by total credit received':'⚡ Zero downside risk — put side fully covered by total credit received'}
+      </div>
+    </div>`;
+
+  } else if(s==='JADE_LIZARD'){
+    strikes=`<div style="background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.2);border-radius:8px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#00ff88;margin-bottom:10px;">🦎 JADE LIZARD — Zero upside risk when credit covers call distance</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="text-align:center;padding:8px;background:rgba(255,71,87,.06);border-radius:5px;border:1px solid rgba(255,71,87,.15);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">WING (BUY)</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:2px;">Long Put</div>
+          <div style="font-family:var(--sans);font-size:18px;font-weight:800;color:var(--red)">${sc.l1}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:rgba(255,71,87,.08);border-radius:5px;border:1px solid rgba(255,71,87,.25);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">SELL</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:2px;">Short Put</div>
+          <div style="font-family:var(--sans);font-size:22px;font-weight:800;color:var(--red)">${sc.l2}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:rgba(0,255,136,.06);border-radius:5px;border:1px solid rgba(0,255,136,.2);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">SELL (no wing)</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:2px;">Short Call</div>
+          <div style="font-family:var(--sans);font-size:22px;font-weight:800;color:#00ff88">${sc.l3}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:6px;background:rgba(0,255,136,.06);border-radius:4px;font-size:10px;color:#00ff88;text-align:center;">
+        ✅ If total credit received > (${sc.l3} - ${Math.round(sc.spx)}) pts = ZERO upside risk on call
+      </div>
+    </div>`;
+
+  } else if(s==='CALENDAR_SPREAD'){
+    strikes=`<div style="background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.2);border-radius:8px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--yellow);margin-bottom:10px;">📅 CALENDAR SPREAD — Pure Theta Play</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="text-align:center;padding:10px;background:rgba(255,71,87,.06);border-radius:5px;border:1px solid rgba(255,71,87,.2);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">SELL — 0DTE (expires today)</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">ATM Call or Put</div>
+          <div style="font-family:var(--sans);font-size:26px;font-weight:800;color:var(--red)">${sc.l1}</div>
+          <div style="font-size:9px;color:var(--red);margin-top:3px;">Decays to zero today ↓</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,200,120,.05);border-radius:5px;border:1px solid rgba(0,200,120,.2);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">BUY — 7DTE (next week)</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Same Strike</div>
+          <div style="font-family:var(--sans);font-size:26px;font-weight:800;color:var(--green)">${sc.l2}</div>
+          <div style="font-size:9px;color:var(--green);margin-top:3px;">Retains value ↑</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:6px;background:rgba(255,215,0,.06);border-radius:4px;font-size:10px;color:var(--yellow);text-align:center;">
+        💡 SAME strike, DIFFERENT expiry — profit from near-term decaying faster than far-term
+      </div>
+    </div>`;
+
+  } else if(s==='DIAGONAL_SPREAD'){
+    strikes=`<div style="background:rgba(255,159,67,.04);border:1px solid rgba(255,159,67,.2);border-radius:8px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#ff9f43;margin-bottom:10px;">📊 DIAGONAL SPREAD — Different Strike + Different Expiry</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="text-align:center;padding:10px;background:rgba(255,71,87,.06);border-radius:5px;border:1px solid rgba(255,71,87,.2);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">SELL — 0DTE (today)</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">${sc.l1_lbl}</div>
+          <div style="font-family:var(--sans);font-size:26px;font-weight:800;color:var(--red)">${sc.l1}</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(255,159,67,.06);border-radius:5px;border:1px solid rgba(255,159,67,.2);">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">BUY — 7DTE (next week)</div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">${sc.l2_lbl}</div>
+          <div style="font-family:var(--sans);font-size:26px;font-weight:800;color:#ff9f43">${sc.l2}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:6px;background:rgba(255,159,67,.06);border-radius:4px;font-size:10px;color:#ff9f43;text-align:center;">
+        Different strikes AND different expiry — directional theta collection
+      </div>
+    </div>`;
   }
 
-  const pzHTML=sc.pzone?`<div class="pz"><div class="pz-lbl">Profit Zone — SPX stays inside</div><div class="pz-val" style="color:${sm.clr}">${sc.pzone}</div>${sc.pzone_w?`<div class="pz-sub">${sc.pzone_w} point range</div>`:''}</div>`:'';
+  const pzHTML=sc.pzone?`<div class="pz"><div class="pz-lbl">Profit Zone</div><div class="pz-val" style="color:${sm.clr}">${sc.pzone}</div>${sc.pzone_w?`<div class="pz-sub">${sc.pzone_w} point range</div>`:''}</div>`:'';
+  const creditWarnHTML=sc.creditWarning?`<div style="margin-top:9px;padding:9px;border-radius:5px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);font-size:11px;color:var(--yellow);">${sc.creditWarning}</div>`:'';
 
   return `<div class="tc ${sm.cc}">
     <div class="tc-title">⚡ ${sm.nm} — Enter This Trade Now</div>
     ${strikes}${pzHTML}
-    <div class="tr"><span class="tk">Expiration</span><span class="tv-t">${sc.expiry}</span></div>
-    <div class="tr"><span class="tk">Wing Width</span><span class="tv-w">${sc.wing}</span></div>
-    <div class="tr"><span class="tk">Target Credit (limit order)</span><span class="tv-y">${sc.credit}</span></div>
-    <div class="tr"><span class="tk">Max Risk / Contract</span><span class="tv-r">${sc.risk}</span></div>
-    <div class="tr" style="border-top:1px solid rgba(0,200,120,.15);margin-top:3px;padding-top:5px;"><span class="tk">✅ Take Profit When</span><span class="tv-g">${sc.profit_tgt}</span></div>
-    <div class="tr"><span class="tk">🛑 Stop Loss When</span><span class="tv-r">${sc.stop}</span></div>
-    <div class="tr"><span class="tk">⏰ Hard Close PST</span><span class="tv-t">${sc.close_pst} — no exceptions</span></div>
-    ${sc.creditWarning?`<div style="margin-top:9px;padding:9px 11px;border-radius:5px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);">
-      <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--yellow);margin-bottom:4px;">Credit Warning</div>
-      <div style="font-size:11px;color:var(--yellow);line-height:1.65;">${sc.creditWarning}</div>
-    </div>`:''}
+    <div class="tr"><span class="tk">Expiration</span><span class="tv-t">${sc.expiry||'0DTE today'}</span></div>
+    <div class="tr"><span class="tk">Wing / Structure</span><span class="tv-w">${sc.wing}</span></div>
+    <div class="tr"><span class="tk">Target Credit / Cost</span><span class="tv-y">${sc.credit}</span></div>
+    <div class="tr"><span class="tk">Max Risk</span><span class="tv-r">${sc.risk}</span></div>
+    <div class="tr" style="border-top:1px solid rgba(0,200,120,.15);margin-top:3px;padding-top:5px;"><span class="tk">✅ Take Profit</span><span class="tv-g">${sc.profit_tgt}</span></div>
+    <div class="tr"><span class="tk">🛑 Stop Loss</span><span class="tv-r">${sc.stop}</span></div>
+    <div class="tr"><span class="tk">⏰ Hard Close PST</span><span class="tv-t">${sc.close_pst}</span></div>
     <div class="why"><div class="why-t">Why this strategy today</div><div class="why-b">${sc.strat_why}</div></div>
-    <div class="onote">Order type: <strong style="color:#fff">LIMIT at net credit (mid price)</strong><br>Not filled in 3 min? Move limit $0.10 toward ask</div>
+    <div class="onote">Order: <strong style="color:#fff">LIMIT at net credit (mid price)</strong> · Not filled in 3 min → move $0.10 toward ask</div>
+    ${creditWarnHTML}
     <div style="margin-top:9px;text-align:center;">
       <button onclick="logFromSignal()" style="background:rgba(200,255,0,.08);color:var(--accent);border:1px solid rgba(200,255,0,.25);border-radius:5px;padding:7px 16px;font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:.06em;width:100%;">📒 Log This Trade in Journal</button>
     </div>
@@ -1042,46 +1425,101 @@ function buildWaitCard(sc){
 // UPDATE TICKERS
 // ═══════════════════════════════════════════════════
 function updateTickers(sc){
+  // VIX gauge
   const vv=document.getElementById('tv-vix'),vt=document.getElementById('t-vix');
   vv.textContent=sc.vix?.toFixed(1)||'--';
   vv.style.color=sc.vix<18?'var(--green)':sc.vix<25?'var(--accent)':sc.vix<35?'var(--orange)':'var(--red)';
-  document.getElementById('ts-vix').textContent=sc.vix<18?'Low ✅':sc.vix<25?'Normal ✅':sc.vix<35?'Elevated ⚠':'DANGER ❌';
-  vt.className=`tick ${sc.vix_pass?'pass':sc.vix<35?'warn':'fail'}`;
+  document.getElementById('ts-vix').textContent=
+    sc.vix<18?'Low ✅':sc.vix<22?'Ideal ✅':sc.vix<25?'Elevated ⚠':sc.vix<35?'High ⚠':'Extreme ❌';
+  vt.className=`tick ${sc.vix<25?'pass':sc.vix<35?'warn':'fail'}`;
 
+  // SPX gauge
   const sv=document.getElementById('tv-spx'),st=document.getElementById('t-spx');
   sv.textContent=sc.spx?.toLocaleString()||'--';
   sv.style.color='var(--text)';
   const chg=sc.spx_pct;
-  document.getElementById('ts-spx').textContent=`${chg>0?'+':''}${chg?.toFixed(2)}% ${sc.direction}`;
-  st.className='tick pass';
+  const gapTxt=liveGapPct?` gap ${liveGapPct>0?'+':''}${liveGapPct.toFixed(1)}%`:'';
+  document.getElementById('ts-spx').textContent=`${chg>0?'+':''}${chg?.toFixed(2)}% ${sc.direction}${gapTxt}`;
+  st.className=`tick ${Math.abs(liveGapPct||0)<1.5?'pass':'warn'}`;
 
+  // IVR gauge
+  const ivr=liveIvr;
+  const ivrEl=document.getElementById('tv-ivr'),ivrT=document.getElementById('t-ivr');
+  if(ivr!==null){
+    ivrEl.textContent=`${ivr}%`;
+    ivrEl.style.color=ivr<30?'var(--red)':ivr<50?'var(--yellow)':ivr<75?'var(--accent)':'var(--green)';
+    document.getElementById('ts-ivr').textContent=
+      ivr<30?'Cheap — caution':ivr<50?'Moderate':ivr<75?'Rich ✅':'Very rich ✅';
+    ivrT.className=`tick ${ivr>=30?'pass':'fail'}`;
+  } else {
+    ivrEl.textContent='--';
+    document.getElementById('ts-ivr').textContent='Fetching...';
+  }
+
+  // VVIX gauge
+  const vvixEl=document.getElementById('tv-vvix'),vvixT=document.getElementById('t-vvix');
+  if(liveVvix){
+    vvixEl.textContent=liveVvix.toFixed(0);
+    vvixEl.style.color=liveVvix<90?'var(--green)':liveVvix<110?'var(--accent)':'var(--red)';
+    document.getElementById('ts-vvix').textContent=
+      liveVvix<90?'Stable ✅':liveVvix<110?'Caution ⚠':'BLOCK ❌';
+    vvixT.className=`tick ${liveVvix<90?'pass':liveVvix<110?'warn':'fail'}`;
+  } else {
+    vvixEl.textContent='--';
+    document.getElementById('ts-vvix').textContent='Fetching...';
+  }
+
+  // Term structure gauge
+  const termEl=document.getElementById('tv-term'),termT=document.getElementById('t-term');
+  if(liveVix9d&&sc.vix){
+    const isBack=liveVix9d>sc.vix*1.02;
+    const isCont=liveVix9d<sc.vix*0.98;
+    termEl.textContent=isBack?'BACK':isCont?'CONT':'FLAT';
+    termEl.style.color=isBack?'var(--green)':isCont?'var(--yellow)':'var(--accent)';
+    termEl.style.fontSize='13px';
+    document.getElementById('ts-term').textContent=
+      isBack?`9D:${liveVix9d.toFixed(1)} ↑ rich`:
+      isCont?`9D:${liveVix9d.toFixed(1)} ↓ thin`:
+      `9D:${liveVix9d.toFixed(1)} neutral`;
+    termT.className=`tick ${isBack?'pass':isCont?'warn':''}`;
+  } else {
+    termEl.textContent='--';
+    document.getElementById('ts-term').textContent='Fetching...';
+  }
+
+  // Expected move
   const ev=document.getElementById('tv-em');
-  ev.textContent=`±${sc.em||'--'}`;
+  ev.textContent=sc.em?`±${sc.em}`:'--';
   ev.style.color=sc.em>130?'var(--red)':sc.em>90?'var(--orange)':'var(--accent)';
 
+  // Regime
   const regShort={CALM_RANGE:'CALM',LOW_VOL_TREND:'LOW VOL',NORMAL_RANGE:'NORMAL',
-    HIGH_VOL_TREND:'HI VOL',STRESS_TREND:'STRESS',DANGER:'DANGER',EVENT_DAY:'EVENT'};
+    HIGH_VOL_TREND:'HI VOL',STRESS_TREND:'STRESS',NO_TRADE:'NO TRADE'};
   const regColor={CALM_RANGE:'var(--green)',LOW_VOL_TREND:'var(--teal)',NORMAL_RANGE:'var(--accent)',
-    HIGH_VOL_TREND:'var(--orange)',STRESS_TREND:'var(--red)',DANGER:'var(--red)',EVENT_DAY:'var(--red)'};
-  const stNames={IRON_CONDOR:'Iron Condor',IRON_BUTTERFLY:'Iron Butterfly',
-    CREDIT_SPREAD:'Credit Spread',DOUBLE_CREDIT_SPREAD:'Dbl Spread',NO_TRADE:'No Trade'};
+    HIGH_VOL_TREND:'var(--orange)',STRESS_TREND:'var(--red)',NO_TRADE:'var(--red)'};
+  const stNames={
+    IRON_CONDOR:'Iron Condor',IRON_BUTTERFLY:'Iron Butterfly',
+    CREDIT_SPREAD:'Credit Spread',DOUBLE_CREDIT_SPREAD:'Dbl Spread',
+    BROKEN_WING_BUTTERFLY:'BWB',JADE_LIZARD:'Jade Lizard',
+    CALENDAR_SPREAD:'Calendar',DIAGONAL_SPREAD:'Diagonal',
+    NO_TRADE:'No Trade'};
   const rv=document.getElementById('tv-reg'),rt=document.getElementById('t-reg');
   rv.textContent=regShort[sc.regime]||'--';
   rv.style.color=regColor[sc.regime]||'var(--muted)';
   rv.style.fontSize='12px';
   document.getElementById('ts-reg').textContent=stNames[sc.strategy]||'--';
-  rt.className=`tick ${['CALM_RANGE','LOW_VOL_TREND','NORMAL_RANGE'].includes(sc.regime)?'pass':['HIGH_VOL_TREND','STRESS_TREND'].includes(sc.regime)?'warn':'fail'}`;
+  rt.className=`tick ${['CALM_RANGE','LOW_VOL_TREND','NORMAL_RANGE'].includes(sc.regime)?'pass':
+    ['HIGH_VOL_TREND','STRESS_TREND'].includes(sc.regime)?'warn':'fail'}`;
 
-  updateWinTick(sc.win||getWin());
-
+  // Market/trade status dots
   const td=document.getElementById('trd-dot'),tt=document.getElementById('trd-txt');
   if(sc.signal==='TRADE'){td.className='sd green';tt.textContent=`${stNames[sc.strategy]||'TRADE'} SIGNAL`;tt.style.color='var(--green)';}
   else if(sc.signal==='NO_TRADE'){td.className='sd red';tt.textContent='NO TRADE TODAY';tt.style.color='var(--red)';}
-  else{td.className='sd yellow';tt.textContent='WAIT';tt.style.color='var(--yellow)';}
-
+  else{td.className='sd yellow';tt.textContent='WAIT — SCANNING';tt.style.color='var(--yellow)';}
   const md=document.getElementById('mkt-dot'),mt=document.getElementById('mkt-txt');
   if(mktOpen()){md.className='sd green';mt.textContent='Market Open';}
   else{md.className='sd gray';mt.textContent='Market Closed';}
+  updateWinTick(sc.win||getWin());
 }
 
 function updateWinTick(w){
