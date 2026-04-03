@@ -591,7 +591,7 @@ body{
    DESKTOP BREAKPOINTS — enhance at larger sizes
    ══════════════════════════════════════════════════ */
 @media(min-width:768px){
-  /* ── Desktop: undo mobile-first choices ── */
+  /* ── Desktop: simple top-down normal flow ── */
   :root{--nav-h:0px;}
   body{padding-bottom:0;overflow:auto;}
   .bottom-nav{display:none !important;}
@@ -599,14 +599,21 @@ body{
   .logo-sub{display:inline;}
   #clock{display:block;font-size:11px;color:var(--text3);font-family:var(--mono);}
 
-  /* ── Desktop tab bar ── */
+  /* ── Header: NOT fixed on desktop — stays in flow ── */
+  .app-header{
+    position:relative !important;
+    height:auto;
+    padding:12px 24px;
+  }
+
+  /* ── Desktop tab bar: NOT sticky — stays in flow ── */
   .desktop-tabs{
     display:flex;
-    background:rgba(245,245,247,0.92);
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    background:var(--surface);
     border-bottom:1px solid var(--border);
     padding:0 24px;
-    position:sticky;top:var(--header-h);z-index:99;
+    position:relative !important;
+    top:auto;z-index:auto;
   }
   .desktop-tab{
     padding:11px 16px;font-size:13px;font-weight:500;
@@ -617,22 +624,16 @@ body{
   .desktop-tab:hover{color:var(--text2);}
   .desktop-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
 
-  /* ── Gauge strip always visible and full width ── */
+  /* ── Gauge strip: full 8-col grid, normal flow ── */
   .gauge-strip{
     grid-template-columns:repeat(8,1fr) !important;
     padding:12px 24px;
-    position:sticky;
-    top:calc(var(--header-h) + 42px); /* below tabs */
-    z-index:90;
     background:var(--surface);
     border-bottom:1px solid var(--border);
     display:grid !important;
   }
   .mkt-bar{
     padding:8px 24px;
-    position:sticky;
-    top:calc(var(--header-h) + 42px + 81px); /* below gauge strip */
-    z-index:89;
     background:var(--surface);
     display:flex !important;
   }
@@ -641,8 +642,16 @@ body{
   #panel-scanner{
     display:grid !important;
     grid-template-columns:1fr 380px;
-    height:calc(100vh - 190px); /* header + tabs + gauges + status */
+    height:calc(100vh - 240px);
     overflow:hidden;
+  }
+  /* ── app-content: not fixed on desktop ── */
+  .app-content{
+    position:static !important;
+    top:auto !important;
+    bottom:auto !important;
+    overflow:visible !important;
+    height:auto !important;
   }
   .scan-log{
     flex:1;overflow-y:auto;
@@ -701,11 +710,8 @@ body{
   <div class="desktop-tab" id="dtab-chat" onclick="switchTab('chat')">🤖 AI Assistant</div>
 </nav>
 
-<!-- ─── MAIN CONTENT ─────────────────────────────────── -->
-<div class="app-content" id="app-content">
-
-  <!-- GAUGE STRIP (always visible on scanner) -->
-  <div class="gauge-strip" id="gauge-strip" style="display:none;">
+<!-- ─── GAUGE STRIP (always visible, outside scroll area) ─── -->
+<div class="gauge-strip" id="gauge-strip">
     <div class="gauge" id="t-vix"><div class="g-lbl">VIX</div><div class="g-val" id="tv-vix" style="color:var(--text3)">--</div><div class="g-sub" id="ts-vix">Loading</div></div>
     <div class="gauge" id="t-spx"><div class="g-lbl">SPX</div><div class="g-val" id="tv-spx" style="color:var(--text3)">--</div><div class="g-sub" id="ts-spx">--</div></div>
     <div class="gauge" id="t-ivr"><div class="g-lbl">IV Rank</div><div class="g-val" id="tv-ivr" style="color:var(--text3)">--</div><div class="g-sub" id="ts-ivr">52wk IVR</div></div>
@@ -714,14 +720,17 @@ body{
     <div class="gauge" id="t-em"><div class="g-lbl">Exp Move</div><div class="g-val" id="tv-em" style="color:var(--text3)">--</div><div class="g-sub">±pts today</div></div>
     <div class="gauge" id="t-reg"><div class="g-lbl">Regime</div><div class="g-val" id="tv-reg" style="color:var(--text3);font-size:12px">--</div><div class="g-sub" id="ts-reg">--</div></div>
     <div class="gauge" id="t-win"><div class="g-lbl">Window</div><div class="g-val" id="tv-win" style="color:var(--text3);font-size:10px">--</div><div class="g-sub" id="ts-win">PST</div></div>
-  </div>
+</div>
 
-  <!-- STATUS BAR (always visible on scanner) -->
-  <div class="mkt-bar" id="mkt-bar" style="display:none;">
+<!-- ─── STATUS BAR (always visible) ─────────────────────── -->
+<div class="mkt-bar" id="mkt-bar">
     <div class="mkt-status"><div class="mkt-dot gray" id="mkt-dot"></div><span id="mkt-txt" style="color:var(--text2)">Checking...</span></div>
     <div class="signal-pill wait" id="signal-pill">Awaiting scan</div>
     <div class="mkt-bar-right"><span class="cd" id="nxt-scan">--</span></div>
-  </div>
+</div>
+
+<!-- ─── MAIN CONTENT ─────────────────────────────────── -->
+<div class="app-content" id="app-content">
 
   <!-- ── SCANNER PANEL ── -->
   <div class="panel active" id="panel-scanner">
@@ -2767,11 +2776,7 @@ function switchTab(tab){
   const panel = document.getElementById(`panel-${tab}`);
   if(panel){ panel.style.display='block'; panel.classList.add('active'); }
 
-  // Show/hide gauges and status bar (only on scanner)
-  const gauges = document.getElementById('gauge-strip');
-  const mktBar = document.getElementById('mkt-bar');
-  if(gauges) gauges.style.display = tab==='scanner' ? 'grid' : 'none';
-  if(mktBar) mktBar.style.display = tab==='scanner' ? 'flex' : 'none';
+  // Gauges always visible - no need to toggle
 
   // Update bottom nav (mobile)
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -3061,25 +3066,24 @@ document.addEventListener('DOMContentLoaded', function(){
     if(scanPanel){
       scanPanel.style.display             = 'grid';
       scanPanel.style.gridTemplateColumns = '1fr 380px';
-      scanPanel.style.height              = 'calc(100vh - 106px)';
+      scanPanel.style.height              = 'calc(100vh - 48px)'; // just below header
       scanPanel.style.overflow            = 'hidden';
     }
-    // Remove fixed positioning on desktop
+    // app-content handled by CSS on desktop
     if(appContent){
-      appContent.style.position   = 'static';
-      appContent.style.overflow   = 'visible';
-      appContent.style.height     = 'auto';
+      appContent.style.position = 'static';
+      appContent.style.top      = 'auto';
+      appContent.style.bottom   = 'auto';
+      appContent.style.overflow = 'visible';
+      appContent.style.height   = 'auto';
     }
   } else {
     if(desktopTabs) desktopTabs.style.display = 'none';
     if(bottomNav)   bottomNav.style.display   = 'flex';
   }
 
-  // ── Always show gauges + status bar ──
-  const gauges = document.getElementById('gauge-strip');
-  const mktBar = document.getElementById('mkt-bar');
-  if(gauges) gauges.style.display = 'grid';
-  if(mktBar) mktBar.style.display = 'flex';
+  // ── Gauges always visible (in document flow now) ──
+  // No JS needed to show/hide - they render naturally
 
   // ── Init state ──
   updateWinTick(getWin());
