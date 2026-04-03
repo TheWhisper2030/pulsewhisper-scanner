@@ -1189,15 +1189,47 @@ function runScan(){
   const eventTomorrow = window.isEventTomorrow || false;
 
   // ── HARD BLOCK CONDITIONS ──
+  // Only TRUE hard blocks — extreme situations with NO viable strategy
+  // VVIX >110 and gaps are now WARNINGS that adjust strategy, not shutdowns
   let hardBlock = null;
+  let riskWarnings = []; // non-blocking warnings that affect sizing
+
   if(eventDay){
-    hardBlock = `⚠️ MAJOR ECONOMIC EVENT TODAY (${window.todayStr}) — FOMC / NFP / CPI / PPI. No premium selling. Capital preservation mode.`;
-  } else if(vix>=35){
-    hardBlock = `VIX ${vix.toFixed(1)} ≥35 — extreme volatility. Expected moves exceed 2% per day. No strategy has edge here.`;
-  } else if(vvix>110){
-    hardBlock = `VVIX ${vvix.toFixed(0)} >110 — volatility is itself volatile. VIX can spike 30%+ in minutes. Too dangerous to sell premium today.`;
-  } else if(Math.abs(gapPct)>1.5){
-    hardBlock = `Gap open of ${gapPct.toFixed(2)}% exceeds 1.5% threshold — market declared strong directional intent at open. Wait for next session.`;
+    // FOMC, NFP, CPI = true hard block. Binary binary risk, no edge.
+    hardBlock = `⚠️ MAJOR ECONOMIC EVENT TODAY — FOMC / NFP / CPI. These events create binary price gaps that make any premium-selling strategy unprofitable. Come back tomorrow.`;
+
+  } else if(vix >= 40){
+    // TRUE extreme — 40+ means 2.5%+ daily moves are normal
+    hardBlock = `VIX ${vix.toFixed(1)} ≥40 — market in crisis mode. Expected moves exceed 2.5% per day. No defined-risk strategy has positive EV here. Preserve capital.`;
+
+  } else if(vvix > 130){
+    // Only block at truly extreme VVIX — 130+ means VIX itself moving 5%+ per hour
+    hardBlock = `VVIX ${vvix.toFixed(0)} >130 — volatility of volatility is extreme. VIX is moving too fast for any strike placement to be reliable.`;
+
+  } else {
+    // Everything else gets a WARNING and adjusted strategy, not a block
+
+    // VVIX 110-130: Warning + use wider wings
+    if(vvix > 110){
+      riskWarnings.push(`⚠️ VVIX ${vvix.toFixed(0)} elevated — vol of vol is high. Use 50% normal position size. Widen wings by 5pts. Avoid Iron Butterfly today.`);
+    }
+
+    // VIX 35-40: Tradeable but extreme caution
+    if(vix >= 35){
+      riskWarnings.push(`⚠️ VIX ${vix.toFixed(1)} — extreme zone. Bear call spread ONLY (single side). 1 contract max. Do not use condors or butterflies.`);
+    }
+
+    // Large gap: directional warning
+    if(Math.abs(gapPct) > 1.5){
+      riskWarnings.push(`⚠️ Gap open ${gapPct.toFixed(1)}% — abnormal session open. Favor the direction of the gap. Wait until 30 min after open before entering.`);
+    } else if(Math.abs(gapPct) > 0.8){
+      riskWarnings.push(`⚡ Gap ${gapPct.toFixed(1)}% — watch for gap fill vs continuation before entering.`);
+    }
+
+    // Event tomorrow warning
+    if(isEventTomorrow){
+      riskWarnings.push(`📅 Major event TOMORROW — avoid 1DTE trades today. 0DTE only.`);
+    }
   }
 
   // ── IVR QUALITY FILTER ──
@@ -1259,9 +1291,14 @@ function runScan(){
   const isRichPremium = ivr >= 50;
 
   if(hardBlock){
-    // ── HARD BLOCK ──
+    // ── TRUE HARD BLOCK — only fires for real crisis conditions ──
     regime='NO_TRADE'; strategy='NO_TRADE';
     strat_why=hardBlock;
+
+  } else if(vix>=35){
+    // VIX 35-40: ONLY single-sided bear call spread, far OTM, tiny size
+    regime='DANGER'; strategy='CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} — danger zone. Bear Call Spread ONLY. Sell calls far above market (1.2x EM). 10pt wings. 1 contract max. Wider than normal cushion required. ${riskWarnings.join(' ')}`;
 
   } else if(vix>=30&&isTrending){
     // ── EXTREME STRESS TRENDING ── Double Credit Spread
@@ -1728,18 +1765,41 @@ function runScan(){
 
 
 
-  // Signal
+  // ── SIGNAL DETERMINATION ──
+  // Signal types:
+  //   TRADE    = enter now, all conditions green
+  //   WAIT     = correct strategy but outside entry window — show setup preview
+  //   CAUTION  = tradeable but risk warnings present — show with warnings
+  //   NO_TRADE = true hard block only (event day, VIX 40+, VVIX 130+)
   let signal, sig_why;
+
   if(strategy==='NO_TRADE'){
-    signal='NO_TRADE'; sig_why='VIX too high — preserve capital. Check again tomorrow.';
+    signal='NO_TRADE';
+    sig_why=hardBlock||'Conditions do not support any strategy today. Preserve capital.';
+
   } else if(!winPass){
-    const msg={
-      'PRE-ENTRY':'Opens at 6:50 AM PST. Come back then.',
-      CLOSED:'Entry window closed. Next session tomorrow.',
-      'HARD-CLOSE':'CLOSE ALL POSITIONS NOW. 12:45 PM PST hard close.',
-      'OFF-HOURS':'Market closed. Scanner ready for next session.'
+    // Outside entry window — still show the setup so trader can prepare
+    const windowMsgs={
+      'PRE-ENTRY':`Market opens at 6:50 AM PST. Strategy ready — come back at open.`,
+      'CLOSED':`Entry window closed for today. Review setup for tomorrow's open.`,
+      'HARD-CLOSE':`⏰ 12:45 PM PST — CLOSE ALL OPEN POSITIONS NOW. No new entries.`,
+      'OFF-HOURS':`Market closed. Here is tomorrow's setup based on current conditions.`,
+      'SECONDARY':`Secondary window 9:30–10:30 AM PST. Entry allowed.`
     };
-    signal='WAIT'; sig_why=msg[win]||'Outside entry window.';
+    // Hard close is special — it's an action signal, not a wait
+    if(win==='HARD-CLOSE'){
+      signal='NO_TRADE';
+      sig_why='CLOSE ALL POSITIONS NOW. 12:45 PM PST hard close — no exceptions.';
+    } else {
+      signal='WAIT';
+      sig_why=windowMsgs[win]||'Outside primary entry window. Setup preview shown below.';
+    }
+
+  } else if(riskWarnings.length > 0){
+    // In window but with warnings — show trade with caution flags
+    signal='CAUTION';
+    sig_why=`${isLive?'✓ Live data':'Manual input'}. Conditions tradeable with caution. ${riskWarnings[0]}`;
+
   } else {
     signal='TRADE';
     sig_why=`${isLive?'✓ Live data':'Manual input'}. All conditions aligned — ${strategy.replace(/_/g,' ')} ready to enter.`;
@@ -1793,10 +1853,17 @@ function renderResult(sc,ts){
   const s=sc.strategy||'NO_TRADE';
   const sm=SM[s]||SM.NO_TRADE;
   const sig=sc.signal;
-  const lc=sig==='NO_TRADE'?'le-no':sig==='WAIT'?'le-wait':sm.cls;
-  const icon=sig==='NO_TRADE'?'🚫':sig==='WAIT'?'⏳':sm.em;
+  const lc=sig==='NO_TRADE'?'le-no':
+            sig==='WAIT'?'le-wait':
+            sig==='CAUTION'?'le-wait':
+            sm.cls;
+  const icon=sig==='NO_TRADE'?'🚫':
+              sig==='WAIT'?'⏳':
+              sig==='CAUTION'?'⚠️':
+              sm.em;
   const title=sig==='NO_TRADE'?'🚫 NO TRADE — PRESERVE CAPITAL':
-              sig==='WAIT'?`⏳ WAIT — ${sm.nm}`:
+              sig==='WAIT'?`⏳ SETUP PREVIEW — ${sm.nm}`:
+              sig==='CAUTION'?`⚠️ CAUTION TRADE — ${sm.nm}`:
               `${sm.em} ${sm.nm} — ENTER TRADE`;
 
   let body=`<strong style="color:${sm.clr}">${sc.regime}</strong> — ${sc.regime_why}\n`;
@@ -1811,7 +1878,8 @@ function renderResult(sc,ts){
 
   let card='';
   if(sig==='TRADE') card=buildCard(sc,sm);
-  else if(sig==='WAIT'&&sc.l1) card=buildWaitCard(sc);
+  else if(sig==='CAUTION') card=buildCard(sc,sm); // show full card with warnings
+  else if(sig==='WAIT') card=buildCard(sc,sm); // always show full setup preview
 
   const el=document.createElement('div');
   el.className=`le ${lc}`;
@@ -1953,6 +2021,20 @@ function buildCard(sc,sm){
   const s=sc.strategy;
   let strikes='';
 
+  // Warning banner for CAUTION trades
+  const cautionBanner = sc.signal==='CAUTION' && sc.riskWarnings?.length>0 ?
+    `<div style="background:#fffbeb;border:1px solid #fed7aa;border-radius:12px;padding:10px 14px;margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;color:#9a3412;margin-bottom:6px;">⚠️ Risk Warnings — Reduce Position Size</div>
+      ${sc.riskWarnings.map(w=>`<div style="font-size:12px;color:#92400e;margin-bottom:4px;">• ${w}</div>`).join('')}
+    </div>` : '';
+
+  // WAIT banner for setup previews
+  const waitBanner = sc.signal==='WAIT' ?
+    `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 14px;margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;color:#1e40af;margin-bottom:4px;">📋 Setup Preview — Outside Entry Window</div>
+      <div style="font-size:12px;color:#1e40af;">${sc.sig_why}</div>
+    </div>` : '';
+
   if(s==='IRON_CONDOR'){
     strikes=`<div class="sg sg2">
       <div class="sb put"><div class="sbl">PUT SIDE</div><div class="sba">BUY (wing)</div><div class="sbp sm" style="color:var(--red)">${sc.l1}</div><div class="sb-div" style="background:rgba(255,71,87,.2)"></div><div class="sba">SELL (short)</div><div class="sbp big" style="color:var(--red)">${sc.l2}</div></div>
@@ -2080,7 +2162,8 @@ function buildCard(sc,sm){
   const creditWarnHTML=sc.creditWarning?`<div style="margin-top:9px;padding:9px;border-radius:5px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);font-size:11px;color:var(--yellow);">${sc.creditWarning}</div>`:'';
 
   return `<div class="tc ${sm.cc}">
-    <div class="tc-title">⚡ ${sm.nm} — Enter This Trade Now</div>
+    <div class="tc-title">${sc.signal==='WAIT'?'📋':sc.signal==='CAUTION'?'⚠️':'⚡'} ${sm.nm}${sc.signal==='TRADE'?' — Enter Now':sc.signal==='WAIT'?' — Tomorrow Setup':' — Reduced Size'}</div>
+    ${cautionBanner}${waitBanner}
     ${strikes}${pzHTML}
     <div class="tr"><span class="tk">Expiration</span><span class="tv-t">${sc.expiry||'0DTE today'}</span></div>
     <div class="tr"><span class="tk">Wing / Structure</span><span class="tv-w">${sc.wing}</span></div>
@@ -2693,10 +2776,14 @@ function updateTickers(sc){
   const pill=document.getElementById('signal-pill');
   if(sc.signal==='TRADE'){
     pill.className='signal-pill trade';pill.textContent=`✓ ${stNames[sc.strategy]||'TRADE'} Signal`;
+  } else if(sc.signal==='CAUTION'){
+    pill.className='signal-pill wait';pill.textContent=`⚠️ ${stNames[sc.strategy]||'CAUTION'} — Reduced Size`;
   } else if(sc.signal==='NO_TRADE'){
     pill.className='signal-pill notrade';pill.textContent='No Trade Today';
+  } else if(sc.signal==='WAIT'){
+    pill.className='signal-pill wait';pill.textContent=`📋 ${stNames[sc.strategy]||'Setup Preview'}`;
   } else {
-    pill.className='signal-pill wait';pill.textContent='Waiting for conditions';
+    pill.className='signal-pill wait';pill.textContent='Awaiting scan';
   }
 
   // Market status
