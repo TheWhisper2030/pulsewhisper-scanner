@@ -1023,178 +1023,171 @@ function getPSTLbl(w){
 // LIVE DATA FETCH — Yahoo Finance (works when hosted outside Claude)
 // ═══════════════════════════════════════════════════
 async function fetchLiveData(){
-  const dot=document.getElementById('live-dot');
-  const txt=document.getElementById('live-txt');
-  dot.className='live-dot loading';
-  txt.textContent='Fetching live data...';
+  const dot = document.getElementById('live-dot');
+  const txt = document.getElementById('live-txt');
+  dot.className = 'live-dot loading';
+  txt.textContent = 'Fetching...';
 
-  // ── 2026 ECONOMIC CALENDAR (hardcoded — published by Fed/BLS annually) ──
+  // ── CALENDAR (runs synchronously, no fetch needed) ──
   const eventCalendar2026 = [
-    // FOMC Meetings
-    '2026-01-28','2026-01-29',
-    '2026-03-18','2026-03-19',
-    '2026-04-29','2026-04-30',
-    '2026-06-17','2026-06-18',
-    '2026-07-29','2026-07-30',
-    '2026-09-16','2026-09-17',
-    '2026-11-04','2026-11-05',
-    '2026-12-16','2026-12-17',
-    // NFP Jobs Reports (first Friday of each month)
+    '2026-01-28','2026-01-29','2026-03-18','2026-03-19',
+    '2026-04-29','2026-04-30','2026-06-17','2026-06-18',
+    '2026-07-29','2026-07-30','2026-09-16','2026-09-17',
+    '2026-11-04','2026-11-05','2026-12-16','2026-12-17',
     '2026-01-09','2026-02-06','2026-03-06','2026-04-03',
     '2026-05-08','2026-06-05','2026-07-10','2026-08-07',
     '2026-09-04','2026-10-02','2026-11-06','2026-12-04',
-    // CPI Releases (approx mid-month)
     '2026-01-15','2026-02-12','2026-03-12','2026-04-14',
     '2026-05-13','2026-06-11','2026-07-15','2026-08-13',
     '2026-09-11','2026-10-14','2026-11-12','2026-12-11',
-    // PCE / GDP major releases
     '2026-01-30','2026-03-27','2026-06-26','2026-09-25','2026-12-23'
   ];
-
-  // 2026 US Equity Market Holidays (NYSE closed, futures may be open)
   const marketHolidays2026 = [
-    '2026-01-01', // New Year's Day
-    '2026-01-19', // MLK Day
-    '2026-02-16', // Presidents Day
-    '2026-04-03', // Good Friday ← TODAY
-    '2026-05-25', // Memorial Day
-    '2026-06-19', // Juneteenth
-    '2026-07-03', // Independence Day (observed)
-    '2026-09-07', // Labor Day
-    '2026-11-26', // Thanksgiving
-    '2026-12-25', // Christmas
+    '2026-01-01','2026-01-19','2026-02-16','2026-04-03',
+    '2026-05-25','2026-06-19','2026-07-03','2026-09-07',
+    '2026-11-26','2026-12-25'
   ];
-
-  const isMarketHoliday = marketHolidays2026.includes(todayStr);
-  const holidayName = {
+  const holidayNames = {
     '2026-01-01':"New Year's Day",'2026-01-19':'MLK Day',
     '2026-02-16':'Presidents Day','2026-04-03':'Good Friday',
     '2026-05-25':'Memorial Day','2026-06-19':'Juneteenth',
     '2026-07-03':'Independence Day','2026-09-07':'Labor Day',
     '2026-11-26':'Thanksgiving','2026-12-25':'Christmas'
-  }[todayStr]||'Market Holiday';
+  };
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrowStr = new Date(Date.now()+86400000).toISOString().split('T')[0];
-  const isEventDay = eventCalendar2026.includes(todayStr);
-  const isEventTomorrow = eventCalendar2026.includes(tomorrowStr);
+  window.isEventDay = eventCalendar2026.includes(todayStr);
+  window.isEventTomorrow = eventCalendar2026.includes(tomorrowStr);
+  window.isMarketHoliday = marketHolidays2026.includes(todayStr);
+  window.holidayName = holidayNames[todayStr] || 'Market Holiday';
+  window.todayStr = todayStr;
 
-  // ── PROXY LIST ──
-  const proxies=[
-    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-    u=>`https://thingproxy.freeboard.io/fetch/${u}`,
-    u=>u
+  // ── SINGLE FAST FETCH with 8-second total timeout ──
+  // If ALL proxies fail, immediately fall back to manual — no infinite hang
+  const TOTAL_TIMEOUT = 8000; // 8 seconds max for entire fetch operation
+  const deadline = Date.now() + TOTAL_TIMEOUT;
+
+  const proxies = [
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    u => u  // direct attempt
   ];
 
-  async function tryFetch(url, ms=7000){
-    for(const p of proxies){
-      try{
-        const c=new AbortController();
-        setTimeout(()=>c.abort(),ms);
-        const r=await fetch(p(url),{signal:c.signal,cache:'no-store'});
-        if(r.ok) return await r.json();
-      }catch(e){continue;}
+  async function quickFetch(url) {
+    for (const proxyFn of proxies) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 500) return null; // out of time
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), Math.min(3000, remaining));
+        const r = await fetch(proxyFn(url), { signal: ctrl.signal, cache: 'no-store' });
+        clearTimeout(timer);
+        if (r.ok) return await r.json();
+      } catch(e) { continue; }
     }
     return null;
   }
 
-  // ── FETCH SPX (with 20-day history for SMA) ──
-  let gotSpx=false;
-  try{
-    // Use 30d range to get enough bars for 20-day SMA
-    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=30d');
-    if(d?.chart?.result?.[0]){
-      const meta=d.chart.result[0].meta;
-      const quotes=d.chart.result[0].indicators?.quote?.[0];
-      const closes=quotes?.close?.filter(v=>v!=null)||[];
-      const opens=quotes?.open?.filter(v=>v!=null)||[];
+  let gotSpx = false, gotVix = false;
 
-      liveSpx=meta?.regularMarketPrice||closes[closes.length-1];
-      liveOpen=meta?.regularMarketOpen||opens[opens.length-1];
-      livePrevClose=meta?.previousClose||meta?.chartPreviousClose||closes[closes.length-2];
+  // Fetch SPX and VIX in PARALLEL for speed
+  const [spxData, vixData] = await Promise.allSettled([
+    quickFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=30d'),
+    quickFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1y')
+  ]);
 
-      if(liveSpx&&livePrevClose){
-        liveChg=((liveSpx-livePrevClose)/livePrevClose)*100;
-        liveGapPct=liveOpen?((liveOpen-livePrevClose)/livePrevClose)*100:0;
+  // Process SPX
+  try {
+    const d = spxData.value;
+    if (d?.chart?.result?.[0]) {
+      const meta = d.chart.result[0].meta;
+      const quotes = d.chart.result[0].indicators?.quote?.[0];
+      const closes = quotes?.close?.filter(v => v != null) || [];
+      const opens = quotes?.open?.filter(v => v != null) || [];
+      liveSpx = meta?.regularMarketPrice || closes[closes.length-1];
+      liveOpen = meta?.regularMarketOpen || opens[opens.length-1];
+      livePrevClose = meta?.previousClose || meta?.chartPreviousClose || closes[closes.length-2];
+      if (liveSpx && livePrevClose) {
+        liveChg = ((liveSpx - livePrevClose) / livePrevClose) * 100;
+        liveGapPct = liveOpen ? ((liveOpen - livePrevClose) / livePrevClose) * 100 : 0;
       }
-
-      // ── 20-DAY SMA ──
-      if(closes.length>=20){
-        const last20=closes.slice(-20);
-        liveSma20=last20.reduce((s,v)=>s+v,0)/20;
+      if (closes.length >= 20) {
+        const last20 = closes.slice(-20);
+        liveSma20 = last20.reduce((s, v) => s + v, 0) / 20;
       }
-
-      if(liveSpx){ gotSpx=true; document.getElementById('inp-spx').value=Math.round(liveSpx); }
-
-      // Auto-detect direction from open vs current
-      if(liveSpx&&liveOpen){
-        const chgFromOpen=((liveSpx-liveOpen)/liveOpen)*100;
-        const dir=document.getElementById('inp-dir');
-        if(chgFromOpen<=-0.3) dir.value='DOWN';
-        else if(chgFromOpen>=0.3) dir.value='UP';
-        else dir.value='FLAT';
+      if (liveSpx) {
+        gotSpx = true;
+        document.getElementById('inp-spx').value = Math.round(liveSpx);
+        // Auto-detect direction
+        if (liveOpen) {
+          const chg = ((liveSpx - liveOpen) / liveOpen) * 100;
+          const dir = document.getElementById('inp-dir');
+          if (chg <= -0.3) dir.value = 'DOWN';
+          else if (chg >= 0.3) dir.value = 'UP';
+          else dir.value = 'FLAT';
+        }
       }
     }
-  }catch(e){console.warn('SPX fetch:',e.message);}
+  } catch(e) {}
 
-  // ── FETCH VIX (with 52-week high/low) ──
-  let gotVix=false;
-  try{
-    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1y');
-    if(d?.chart?.result?.[0]){
-      const meta=d.chart.result[0].meta;
-      const closes=d.chart.result[0].indicators?.quote?.[0]?.close?.filter(v=>v!=null)||[];
-
-      liveVix=meta?.regularMarketPrice||closes[closes.length-1];
-
-      // 52-week high and low from price history
-      if(closes.length>0){
-        liveVix52High=Math.max(...closes);
-        liveVix52Low=Math.min(...closes);
-      } else {
-        // fallback to meta fields if available
-        liveVix52High=meta?.fiftyTwoWeekHigh||35;
-        liveVix52Low=meta?.fiftyTwoWeekLow||12;
+  // Process VIX
+  try {
+    const d = vixData.value;
+    if (d?.chart?.result?.[0]) {
+      const meta = d.chart.result[0].meta;
+      const closes = d.chart.result[0].indicators?.quote?.[0]?.close?.filter(v => v != null) || [];
+      liveVix = meta?.regularMarketPrice || closes[closes.length-1];
+      if (closes.length > 0) {
+        liveVix52High = Math.max(...closes);
+        liveVix52Low = Math.min(...closes);
       }
-
-      // Calculate IVR
-      if(liveVix&&liveVix52High&&liveVix52Low&&liveVix52High!==liveVix52Low){
-        liveIvr=Math.round(((liveVix-liveVix52Low)/(liveVix52High-liveVix52Low))*100);
+      if (liveVix && liveVix52High && liveVix52Low && liveVix52High !== liveVix52Low) {
+        liveIvr = Math.round(((liveVix - liveVix52Low) / (liveVix52High - liveVix52Low)) * 100);
       }
-
-      if(liveVix){ gotVix=true; document.getElementById('inp-vix').value=liveVix.toFixed(2); }
+      if (liveVix) {
+        gotVix = true;
+        document.getElementById('inp-vix').value = liveVix.toFixed(2);
+      }
     }
-  }catch(e){console.warn('VIX fetch:',e.message);}
+  } catch(e) {}
 
-  // ── FETCH VVIX ──
-  try{
-    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVVIX?interval=1d&range=1d');
-    liveVvix=d?.chart?.result?.[0]?.meta?.regularMarketPrice||null;
-  }catch(e){console.warn('VVIX fetch:',e.message);}
+  // Fetch VVIX + VIX9D in background (non-blocking, best effort)
+  const remaining = deadline - Date.now();
+  if (remaining > 1000) {
+    Promise.allSettled([
+      quickFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVVIX?interval=1d&range=1d'),
+      quickFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX9D?interval=1d&range=1d')
+    ]).then(([vvixRes, vix9dRes]) => {
+      try { liveVvix = vvixRes.value?.chart?.result?.[0]?.meta?.regularMarketPrice || null; } catch(e) {}
+      try { liveVix9d = vix9dRes.value?.chart?.result?.[0]?.meta?.regularMarketPrice || null; } catch(e) {}
+    });
+  }
 
-  // ── FETCH VIX9D ──
-  try{
-    const d=await tryFetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX9D?interval=1d&range=1d');
-    liveVix9d=d?.chart?.result?.[0]?.meta?.regularMarketPrice||null;
-  }catch(e){console.warn('VIX9D fetch:',e.message);}
-
-  // ── Store calendar data globally ──
-  window.isEventDay=isEventDay;
-  window.isEventTomorrow=isEventTomorrow;
-  window.todayStr=todayStr;
-
-  // ── Update status indicator ──
-  const gotBoth=gotSpx&&gotVix;
-  if(gotBoth){
-    dot.className='live-dot on';
-    const ivrTxt=liveIvr!==null?` | IVR ${liveIvr}%`:'';
-    const vvixTxt=liveVvix?` | VVIX ${liveVvix.toFixed(0)}`:'';
-    txt.textContent=`Live ✓  SPX ${Math.round(liveSpx).toLocaleString()} | VIX ${liveVix.toFixed(2)}${ivrTxt}${vvixTxt}`;
+  // ── Update status — always show result, never hang ──
+  if (gotSpx && gotVix) {
+    dot.className = 'live-dot on';
+    const ivrTxt = liveIvr !== null ? ` | IVR ${liveIvr}%` : '';
+    txt.textContent = `Live ✓  SPX ${Math.round(liveSpx).toLocaleString()} | VIX ${liveVix.toFixed(2)}${ivrTxt}`;
     return true;
+  } else if (gotSpx || gotVix) {
+    dot.className = 'live-dot';
+    dot.style.background = 'var(--orange)';
+    txt.textContent = `Partial: ${gotSpx ? 'SPX ✓' : 'SPX ✗'} ${gotVix ? 'VIX ✓' : 'VIX ✗'} — verify manually`;
+    return false;
   } else {
-    dot.className='live-dot err';
-    txt.textContent=`${gotSpx?'SPX ✓':'SPX ✗'} ${gotVix?'VIX ✓':'VIX ✗'} — update fields manually`;
+    // Complete failure — fall back to manual gracefully
+    dot.className = 'live-dot err';
+    txt.textContent = 'Live fetch unavailable — using manual values';
+    // Show a helpful message in scan log
+    addLog('le-info', '⚠️ Live Fetch Unavailable',
+      'Yahoo Finance proxies are not responding (common during high-volatility sessions).
+
+' +
+      'Enter SPX and VIX manually below, then tap ▶ Scan.
+
+' +
+      'Check: finance.yahoo.com for current SPX and VIX prices.');
     return false;
   }
 }
@@ -1203,21 +1196,43 @@ async function fetchLiveData(){
 // FETCH + SCAN (main entry point)
 // ═══════════════════════════════════════════════════
 async function fetchAndScan(){
-  const btn=document.getElementById('scan-btn');
-  btn.disabled=true;
-  btn.innerHTML='<span class="spinner"></span>Fetching...';
-  document.getElementById('scan-status').textContent='Fetching live data...';
+  const btn = document.getElementById('scan-btn');
+  const statusEl = document.getElementById('scan-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching...';
+  statusEl.textContent = 'Fetching live data...';
 
-  await fetchLiveData();
+  // Always resolve within 10 seconds — never hang
+  try {
+    await Promise.race([
+      fetchLiveData(),
+      new Promise(resolve => setTimeout(() => {
+        // Timeout — show error and continue with manual values
+        const dot = document.getElementById('live-dot');
+        const txt = document.getElementById('live-txt');
+        dot.className = 'live-dot err';
+        txt.textContent = 'Fetch timed out — using manual values';
+        resolve(false);
+      }, 10000))
+    ]);
+  } catch(e) {
+    console.warn('fetchLiveData error:', e);
+  }
 
-  btn.innerHTML='<span class="spinner"></span>Analyzing...';
-  document.getElementById('scan-status').textContent='Analyzing conditions...';
+  btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+  statusEl.textContent = 'Analyzing...';
 
-  runScan();
+  // Always run scan regardless of fetch success
+  try {
+    runScan();
+  } catch(e) {
+    console.error('runScan error:', e);
+    addLog('le-info', '⚠️ Scan Error', 'Something went wrong. Try refreshing the page.');
+  }
 
-  btn.disabled=false;
-  btn.textContent='⟳ Fetch + Scan';
-  if(autoScan) startCD(15*60);
+  btn.disabled = false;
+  btn.textContent = '⟳ Fetch + Scan';
+  if (autoScan) startCD(15 * 60);
 }
 
 // ═══════════════════════════════════════════════════
@@ -2748,14 +2763,7 @@ updateWinTick(getWin());
 // Load saved API key
 loadApiKey();
 
-// Auto-fetch on load if market is open
-if(mktOpen()){
-  document.getElementById('live-txt').textContent='Auto-fetching...';
-  fetchAndScan();
-} else {
-  document.getElementById('live-dot').className='live-dot';
-  document.getElementById('live-txt').textContent='Market closed';
-}
+// auto-fetch handled in DOMContentLoaded
 
 
 // ═══════════════════════════════════════════════════
