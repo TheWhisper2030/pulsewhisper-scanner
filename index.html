@@ -639,10 +639,10 @@ body{
   }
 
   /* ── Scanner panel: scan log left, chat right ── */
-  #panel-scanner{
+  #panel-scanner.active, #panel-scanner{
     display:grid !important;
-    grid-template-columns:1fr 380px;
-    height:calc(100vh - 240px);
+    grid-template-columns:1fr 380px !important;
+    min-height:calc(100vh - 200px);
     overflow:hidden;
   }
   /* ── app-content: not fixed on desktop ── */
@@ -652,6 +652,22 @@ body{
     bottom:auto !important;
     overflow:visible !important;
     height:auto !important;
+  }
+  /* ── Chat panel always visible on desktop ── */
+  #panel-chat{
+    display:block !important;
+    border-left:1px solid var(--border);
+    height:calc(100vh - 200px);
+    overflow:hidden;
+  }
+  /* ── Left scanner column ── */
+  .scanner-left-col{
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    border-right:1px solid var(--border);
+  }
+  .scanner-left-col .scan-log{
+    flex:1;overflow-y:auto;
   }
   .scan-log{
     flex:1;overflow-y:auto;
@@ -734,6 +750,8 @@ body{
 
   <!-- ── SCANNER PANEL ── -->
   <div class="panel active" id="panel-scanner">
+    <div class="scanner-left-col">
+
     <div class="scan-log" id="scan-log">
       <div class="le le-info">
         <div class="l-title">👋 Welcome to PulseWhisper</div>
@@ -787,6 +805,7 @@ The scanner works perfectly with manual values — all 8 strategies, exact strik
 
   <!-- ── CHAT PANEL ── -->
   <div class="panel" id="panel-chat">
+        </div>
     <div class="chat-panel">
       <div class="chat-hdr">
         <div style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;"></div>
@@ -3106,15 +3125,8 @@ document.addEventListener('DOMContentLoaded', function(){
     if(bottomNav)   bottomNav.style.display   = 'none';
     document.body.style.paddingBottom = '0';
     document.body.style.overflow      = 'auto';
-    // Scanner panel: left column (scan) + right column (chat)
-    const scanPanel = document.getElementById('panel-scanner');
-    if(scanPanel){
-      scanPanel.style.display             = 'grid';
-      scanPanel.style.gridTemplateColumns = '1fr 380px';
-      scanPanel.style.height              = 'calc(100vh - 48px)'; // just below header
-      scanPanel.style.overflow            = 'hidden';
-    }
-    // app-content handled by CSS on desktop
+    document.body.classList.add('is-desktop');
+    // app-content: static on desktop (CSS handles it)
     if(appContent){
       appContent.style.position = 'static';
       appContent.style.top      = 'auto';
@@ -3125,6 +3137,7 @@ document.addEventListener('DOMContentLoaded', function(){
   } else {
     if(desktopTabs) desktopTabs.style.display = 'none';
     if(bottomNav)   bottomNav.style.display   = 'flex';
+    document.body.classList.add('is-mobile');
   }
 
   // ── Gauges always visible (in document flow now) ──
