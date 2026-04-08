@@ -777,11 +777,11 @@ The scanner works perfectly with manual values — all 8 strategies, exact strik
     <div class="manual-bar">
       <div class="mi-group">
         <div class="mi-lbl">SPX Price</div>
-        <input class="mi-inp" id="inp-spx" type="number" value="6369" step="1" inputmode="decimal" onkeydown="if(event.key==='Enter')fetchAndScan()">
+        <input class="mi-inp" id="inp-spx" type="number" value="6612" step="1" inputmode="decimal" onkeydown="if(event.key==='Enter')fetchAndScan()">
       </div>
       <div class="mi-group">
         <div class="mi-lbl">VIX Level</div>
-        <input class="mi-inp" id="inp-vix" type="number" value="31.05" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')fetchAndScan()">
+        <input class="mi-inp" id="inp-vix" type="number" value="23.87" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')fetchAndScan()">
       </div>
       <div class="manual-bar-row2">
         <div class="mi-group">
@@ -1088,17 +1088,69 @@ async function fetchLiveData(){
   // ── Get Twelve Data API key ──
   const tdKey = getTdKey();
 
+  // ── If no TD key, try fallback sources (no auth needed) ──
   if(!tdKey){
+    dot.className='live-dot loading';
+    txt.textContent='Trying free sources...';
+
+    // Try multiple no-auth sources in parallel with 5s timeout
+    const fallbackUrls = [
+      // Yahoo Finance via CORS proxies
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=2d'),
+      'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=2d'),
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query2.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=2d'),
+    ];
+
+    let gotFallback = false;
+    for(const url of fallbackUrls){
+      try{
+        const ctrl = new AbortController();
+        setTimeout(()=>ctrl.abort(), 4000);
+        const r = await fetch(url, {signal:ctrl.signal, cache:'no-store'});
+        if(!r.ok) continue;
+        const d = await r.json();
+        const spxPrice = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if(spxPrice && spxPrice > 1000){
+          liveSpx = spxPrice;
+          document.getElementById('inp-spx').value = Math.round(liveSpx);
+          gotFallback = true;
+          break;
+        }
+      }catch(e){ continue; }
+    }
+
+    // Try VIX via same proxies
+    if(gotFallback){
+      const vixUrls = [
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=2d'),
+        'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=2d'),
+      ];
+      for(const url of vixUrls){
+        try{
+          const ctrl = new AbortController();
+          setTimeout(()=>ctrl.abort(), 4000);
+          const r = await fetch(url, {signal:ctrl.signal, cache:'no-store'});
+          if(!r.ok) continue;
+          const d = await r.json();
+          const vixPrice = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+          if(vixPrice && vixPrice > 0){
+            liveVix = vixPrice;
+            document.getElementById('inp-vix').value = liveVix.toFixed(2);
+            break;
+          }
+        }catch(e){ continue; }
+      }
+    }
+
+    if(gotFallback && liveSpx){
+      dot.className='live-dot on';
+      txt.textContent = 'Live ✓  SPX ' + Math.round(liveSpx).toLocaleString() + (liveVix?' | VIX '+liveVix.toFixed(2):'') + ' | Add TD key for IVR/SMA';
+      return true;
+    }
+
+    // Complete fallback failure - show instructions but don't block scan
     dot.className='live-dot err';
-    txt.textContent='Add free Twelve Data key for live data';
-    addLog('le-info','📡 Live Data Setup Required',
-      'To get live SPX + VIX data automatically:\n\n' +
-      '1. Go to twelvedata.com\n' +
-      '2. Click "Get free API key" (30 seconds, no credit card)\n' +
-      '3. Paste the key in the field above\n' +
-      '4. Tap ⟳ Fetch + Scan\n\n' +
-      'Free plan: 800 calls/day — enough to scan every 3 minutes all day.\n\n' +
-      'Until then: enter SPX and VIX manually below and tap ▶ Scan.');
+    txt.textContent='Using manual values — add Twelve Data key for live data';
     return false;
   }
 
@@ -1277,7 +1329,13 @@ function runScan(){
   const spx=parseFloat(document.getElementById('inp-spx').value)||6506;
   const vix=parseFloat(document.getElementById('inp-vix').value)||24.5;
   const direction=document.getElementById('inp-dir').value||'FLAT';
-  const isLive=liveSpx!==null&&liveVix!==null;
+  // isLive = true only when live data matches what's in the input fields
+  // If user manually overrode the fields, treat as manual input
+  const inputSpx = parseFloat(document.getElementById('inp-spx').value)||6612;
+  const inputVix  = parseFloat(document.getElementById('inp-vix').value)||23.87;
+  const isLive = liveSpx!==null && liveVix!==null &&
+                 Math.abs(inputSpx - liveSpx) < 5 &&
+                 Math.abs(inputVix  - liveVix)  < 1;
 
   // Computed
   const em=Math.round(spx*(vix/100)/15.87);
@@ -1300,7 +1358,7 @@ function runScan(){
   const vvix = liveVvix || 95;
   const vix9d = liveVix9d || vix;
   const sma20 = liveSma20 || spx;
-  const gapPct = liveGapPct || 0;
+  const gapPct = isLive ? (liveGapPct || 0) : 0;
   const eventDay = window.isEventDay || false;
   const eventTomorrow = window.isEventTomorrow || false;
 
@@ -1422,9 +1480,8 @@ function runScan(){
     strat_why=hardBlock;
 
   } else if(vix>=35){
-    // VIX 35-40: ONLY single-sided bear call spread, far OTM, tiny size
     regime='DANGER'; strategy='CREDIT_SPREAD';
-    strat_why=`VIX ${vix.toFixed(1)} — danger zone. Bear Call Spread ONLY. Sell calls far above market (1.2x EM). 10pt wings. 1 contract max. Wider than normal cushion required. ${riskWarnings.join(' ')}`;
+    strat_why=`VIX ${vix.toFixed(1)} — extreme zone. Bear Call Spread ONLY — sell calls far above the market at 1.2× expected move. 10pt wings, 1 contract max. Do not sell puts in this environment.`;
 
   } else if(vix>=30&&isTrending){
     // ── EXTREME STRESS TRENDING ── Double Credit Spread
@@ -1432,10 +1489,11 @@ function runScan(){
     strat_why=`VIX ${vix.toFixed(1)} extreme + ${effectiveDirection} trend → Double Credit Spread. Two separate spreads (bear call + bull put), 15pt wings, 30Δ shorts. IVR ${ivr}%.`;
 
   } else if(vix>=25&&isTrending&&isRichPremium){
-    // ── HIGH STRESS TRENDING + RICH PREMIUM ── Broken Wing Butterfly
-    // BWB gives more credit than a simple spread and eliminates one side of risk
-    regime='STRESS_TREND'; strategy='BROKEN_WING_BUTTERFLY';
-    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% rich → Broken Wing Butterfly. Higher credit than credit spread, zero risk on the ${isBearish?'call (upside)':'put (downside)'} side. Ideal when premium is historically expensive.`;
+    // ── HIGH STRESS TRENDING + RICH PREMIUM ── Credit Spread (Robinhood-friendly)
+    // BWB removed — Robinhood doesn't support ×2 short same strike natively
+    // Credit spread is cleaner, same directional edge, easier to execute
+    regime='STRESS_TREND'; strategy='CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% rich → ${isBearish?'Bear Call Spread':'Bull Put Spread'}. Premium is expensive — selling OTM options has strong edge here. 10pt wings, target 28-32Δ short strike.`;
 
   } else if(vix>=25&&isTrending&&!isRichPremium){
     // ── HIGH STRESS TRENDING + CHEAP PREMIUM ── Standard Credit Spread
@@ -1464,9 +1522,9 @@ function runScan(){
     strat_why=`VIX ${vix.toFixed(1)} elevated but range-bound → Iron Condor with wider 10pt wings to account for elevated EM. 15Δ short strikes. IVR ${ivr}%.`;
 
   } else if(vix>=18&&vix<22&&isTrending&&isRichPremium){
-    // ── NORMAL VOL TRENDING + RICH PREMIUM ── Broken Wing Butterfly
-    regime='NORMAL_RANGE'; strategy='BROKEN_WING_BUTTERFLY';
-    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% rich → Broken Wing Butterfly. Better credit/risk than standard condor when market has directional bias. Zero risk on ${isBearish?'upside':'downside'}.`;
+    // ── NORMAL VOL TRENDING + RICH PREMIUM ── Credit Spread
+    regime='NORMAL_RANGE'; strategy='CREDIT_SPREAD';
+    strat_why=`VIX ${vix.toFixed(1)} + ${effectiveDirection} trend + IVR ${ivr}% rich → ${isBearish?'Bear Call Spread':'Bull Put Spread'}. Directional bias with rich premium — ideal credit spread conditions. 10pt wings.`;
 
   } else if(vix>=15&&vix<22){
     // ── IDEAL IRON CONDOR ZONE ── Standard Iron Condor
@@ -1931,7 +1989,9 @@ function runScan(){
     sig_why=`${isLive?'✓ Live data':'Manual input'}. All conditions aligned — ${strategy.replace(/_/g,' ')} ready to enter.`;
   }
 
-  const spxPct=liveChg||(direction==='DOWN'?-0.8:direction==='UP'?0.8:0.1);
+  // spxPct: use live change if live data matches input, else estimate from direction
+  const spxPct = isLive && liveChg ? liveChg :
+                 (direction==='DOWN' ? -0.8 : direction==='UP' ? 0.8 : 0.1);
   const sc={vix,vix_pass:vixPass,spx,spx_pct:spxPct,direction,
     regime,regime_why:strat_why,win,win_pass:winPass,em,
     strategy,strat_why,signal,sig_why,isLive,
@@ -2143,6 +2203,80 @@ function buildProbSection(sc){
   </div>`;
 }
 
+function buildRobinhoodSteps(sc, sm){
+  const s = sc.strategy;
+  const dir = sc.direction;
+  const isBear = dir === 'DOWN' || dir === 'FLAT';
+
+  let steps = '';
+
+  if(s === 'IRON_CONDOR'){
+    steps = `<strong>Robinhood order: Iron Condor</strong><br>
+    1. Tap Trade → Sell → Iron Condor<br>
+    2. Put spread: Sell ${sc.l2} Put / Buy ${sc.l1} Put<br>
+    3. Call spread: Sell ${sc.l3} Call / Buy ${sc.l4} Call<br>
+    4. Expiry: Today (SPXW PM) · Qty: 1<br>
+    5. Order type: <strong>Limit — net credit (mid price)</strong><br>
+    6. Not filled in 3 min → increase limit by $0.05`;
+
+  } else if(s === 'CREDIT_SPREAD'){
+    const spreadType = isBear ? 'Bear Call Spread' : 'Bull Put Spread';
+    const sellStrike = sc.l1;
+    const buyStrike = sc.l2;
+    steps = `<strong>Robinhood order: ${spreadType}</strong><br>
+    1. Tap Trade → Sell → ${isBear ? 'Call' : 'Put'} Spread<br>
+    2. Sell ${sellStrike} ${isBear?'Call':'Put'} / Buy ${buyStrike} ${isBear?'Call':'Put'}<br>
+    3. Expiry: ${sc.expiry||'Today (SPXW PM)'} · Qty: 1<br>
+    4. Order type: <strong>Limit — net credit (mid price)</strong><br>
+    5. Target credit: ${sc.credit}<br>
+    6. Not filled in 3 min → increase limit by $0.05`;
+
+  } else if(s === 'DOUBLE_CREDIT_SPREAD'){
+    steps = `<strong>Robinhood order: Two separate spreads</strong><br>
+    <em>Order 1 — Bear Call Spread:</em><br>
+    1. Sell ${sc.l3} Call / Buy ${sc.l4} Call · Limit net credit<br>
+    <em>Order 2 — Bull Put Spread:</em><br>
+    2. Sell ${sc.l1} Put / Buy ${sc.l2} Put · Limit net credit<br>
+    3. Expiry: Today (SPXW PM) · Qty: 1 each<br>
+    4. Enter call spread first, then put spread`;
+
+  } else if(s === 'IRON_BUTTERFLY'){
+    steps = `<strong>Robinhood order: Iron Butterfly</strong><br>
+    1. Tap Trade → Sell → Iron Butterfly<br>
+    2. ATM strike: ${sc.l2} (both put and call)<br>
+    3. Wings: ${sc.l1} Put / ${sc.l4} Call<br>
+    4. Expiry: Today (SPXW PM) · Qty: 1<br>
+    5. Order type: <strong>Limit — net credit (mid price)</strong>`;
+
+  } else if(s === 'JADE_LIZARD'){
+    steps = `<strong>Robinhood order: Jade Lizard (2 orders)</strong><br>
+    <em>Order 1 — Put Spread:</em><br>
+    1. Sell ${sc.l2} Put / Buy ${sc.l1} Put · Limit net credit<br>
+    <em>Order 2 — Naked Call (covered by credit):</em><br>
+    2. Sell ${sc.l3} Call · Limit credit<br>
+    3. Expiry: Today (SPXW PM) · Qty: 1<br>
+    ⚠️ Ensure total credit > (${sc.l3} − SPX) to eliminate upside risk`;
+
+  } else if(s === 'CALENDAR_SPREAD'){
+    steps = `<strong>Robinhood order: Calendar Spread</strong><br>
+    1. Tap Trade → Sell → Calendar Spread<br>
+    2. Sell ${sc.l1} (today expiry) / Buy ${sc.l2} (next week)<br>
+    3. Same strike, different expiry<br>
+    4. Order type: <strong>Limit — net debit</strong>`;
+
+  } else if(s === 'DIAGONAL_SPREAD'){
+    steps = `<strong>Robinhood order: Diagonal Spread (2 orders)</strong><br>
+    1. Sell ${sc.l1} (today) · Limit credit<br>
+    2. Buy ${sc.l2} (next week) · Limit debit<br>
+    3. Net should be a small credit or near zero cost`;
+
+  } else {
+    steps = `<strong>Limit order at net credit (mid price)</strong> · Not filled in 3 min → move $0.05 toward market`;
+  }
+
+  return `<div style="line-height:1.8;font-size:12px;">${steps}</div>`;
+}
+
 function buildCard(sc,sm){
   const s=sc.strategy;
   let strikes='';
@@ -2299,7 +2433,9 @@ function buildCard(sc,sm){
     <div class="tr"><span class="tk">🛑 Stop Loss</span><span class="tv-r">${sc.stop}</span></div>
     <div class="tr"><span class="tk">⏰ Hard Close PST</span><span class="tv-t">${sc.close_pst}</span></div>
     <div class="why"><div class="why-t">Why this strategy today</div><div class="why-b">${sc.strat_why}</div></div>
-    <div class="onote">Order: <strong style="color:#fff">LIMIT at net credit (mid price)</strong> · Not filled in 3 min → move $0.10 toward ask</div>
+    <div class="onote" id="rh-steps-${s}">
+      ${buildRobinhoodSteps(sc,sm)}
+    </div>
     ${creditWarnHTML}
     <div style="margin-top:9px;text-align:center;">
       <button onclick="logFromSignal()" style="background:rgba(200,255,0,.08);color:var(--accent);border:1px solid rgba(200,255,0,.25);border-radius:5px;padding:7px 16px;font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:.06em;width:100%;">📒 Log This Trade in Journal</button>
