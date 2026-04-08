@@ -1156,7 +1156,7 @@ async function fetchLiveData(){
 
   // ── Twelve Data API — CORS-enabled, reliable, 800 calls/day free ──
   const TD_BASE = 'https://api.twelvedata.com';
-  const TIMEOUT = 8000;
+  const TIMEOUT = 10000;
 
   async function tdFetch(url){
     const ctrl = new AbortController();
@@ -1166,10 +1166,12 @@ async function fetchLiveData(){
       clearTimeout(timer);
       if(!r.ok) throw new Error('HTTP '+r.status);
       const d = await r.json();
-      if(d.status==='error') throw new Error(d.message||'API error');
+      if(d.status==='error') throw new Error(d.message||d.code||'API error');
       return d;
-    }catch(e){ clearTimeout(timer); throw e; }
+    }catch(e){ clearTimeout(timer); console.warn('tdFetch failed:', url.split('?')[0], e.message); throw e; }
   }
+
+  console.log('PulseWhisper: Fetching with Twelve Data key:', tdKey.slice(0,8)+'...');
 
   let gotSpx=false, gotVix=false;
 
@@ -1184,14 +1186,16 @@ async function fetchLiveData(){
   ]);
 
   // Process SPX price
+  console.log('TD spxQuote result:', spxQuote.status, spxQuote.value || spxQuote.reason?.message);
   try{
     const price = parseFloat(spxQuote.value?.price);
     if(price && !isNaN(price)){
       liveSpx = price;
       gotSpx = true;
       document.getElementById('inp-spx').value = Math.round(liveSpx);
+      console.log('✅ SPX:', liveSpx);
     }
-  }catch(e){}
+  }catch(e){ console.warn('SPX parse error:', e); }
 
   // Process SPX time series for SMA + open + prev close
   try{
@@ -1227,14 +1231,16 @@ async function fetchLiveData(){
   }catch(e){}
 
   // Process VIX price
+  console.log('TD vixQuote result:', vixQuote.status, vixQuote.value || vixQuote.reason?.message);
   try{
     const vixPrice = parseFloat(vixQuote.value?.price);
     if(vixPrice && !isNaN(vixPrice)){
       liveVix = vixPrice;
       gotVix = true;
       document.getElementById('inp-vix').value = liveVix.toFixed(2);
+      console.log('✅ VIX:', liveVix);
     }
-  }catch(e){}
+  }catch(e){ console.warn('VIX parse error:', e); }
 
   // Process VIX 52-week stats for IVR
   try{
@@ -1283,36 +1289,51 @@ async function fetchLiveData(){
 async function fetchAndScan(){
   const btn = document.getElementById('scan-btn');
   const statusEl = document.getElementById('scan-status');
-  const dot = document.getElementById('live-dot');
-  const txt = document.getElementById('live-txt');
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Scanning...';
-  statusEl.textContent = 'Analyzing...';
+  statusEl.textContent = 'Fetching live data...';
 
-  // ── Try background fetch with 5s timeout — never block the scan ──
-  dot.className = 'live-dot loading';
-  txt.textContent = 'Fetching...';
+  const tdKey = getTdKey();
 
-  const fetchPromise = fetchLiveData().catch(() => false);
-  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(false), 5000));
-
-  // Don't await — let scan run immediately with whatever values we have
-  // If fetch completes in time, it updates the input fields before runScan reads them
-  const fetchResult = await Promise.race([fetchPromise, timeoutPromise]);
-
-  if (!fetchResult) {
-    dot.className = 'live-dot';
-    dot.style.background = '#ff9f0a';
-    txt.textContent = 'Using manual values — Yahoo Finance unavailable';
+  if(tdKey){
+    // ── Have API key → wait for live data then scan ──
+    btn.innerHTML = '<span class="spinner"></span>Fetching live data...';
+    try{
+      // Give Twelve Data up to 12 seconds
+      const result = await Promise.race([
+        fetchLiveData(),
+        new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')), 12000))
+      ]);
+      if(result){
+        statusEl.textContent = 'Live data loaded — scanning...';
+      }
+    } catch(e){
+      // Timeout or error — show message but still scan with what we have
+      const dot = document.getElementById('live-dot');
+      const txt = document.getElementById('live-txt');
+      if(dot) dot.className = 'live-dot err';
+      if(txt) txt.textContent = 'Fetch timed out — using manual values';
+      statusEl.textContent = 'Timeout — scanning with manual values';
+    }
+  } else {
+    // ── No key → try free sources briefly then scan ──
+    btn.innerHTML = '<span class="spinner"></span>Trying free sources...';
+    try{
+      await Promise.race([
+        fetchLiveData(),
+        new Promise(resolve => setTimeout(resolve, 6000))
+      ]);
+    } catch(e){}
   }
 
-  // ── ALWAYS run scan ── uses whatever is in the input fields
-  try { runScan(); } catch(e) { console.error(e); }
+  // ── Always run scan with whatever values are in the fields ──
+  btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+  try{ runScan(); } catch(e){ console.error('runScan error:', e); }
 
   btn.disabled = false;
   btn.textContent = '⟳ Fetch + Scan';
-  if (autoScan) startCD(15 * 60);
+  statusEl.textContent = 'Done — ' + new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  if(autoScan) startCD(15 * 60);
 }
 
 
